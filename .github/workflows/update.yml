@@ -1,0 +1,91 @@
+name: Refresh GLD divergence data
+
+# 官方 Historical Archive 实测约 04:10 UTC 追加前一交易日数据（Last-Modified），
+# CDN 缓存 1 天；因此每工作日抓 1 次即可，不必一天多次。
+# 06:13 UTC 主抓，09:13 UTC 补抓（仅在主抓失败/缓存延迟时起作用，无新数据不会提交）。
+# 每月 1 日 03:37 UTC 定时压缩提交历史；另外每次运行都会检查仓库体积是否超过 200 MB。
+on:
+  schedule:
+    - cron: '13 6 * * 1-5'
+    - cron: '13 9 * * 1-5'
+    - cron: '37 3 1 * *'
+  workflow_dispatch:
+    inputs:
+      force_compact:
+        description: '顺便强制压缩提交历史（默认否）'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+# 禁止两次运行互相覆盖，尤其是可能发生的 force push
+concurrency:
+  group: gld-repository
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    env:
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pinned dependency
+        run: pip install openpyxl==3.1.5
+
+      - name: Fetch official data and rebuild index.html
+        run: python fetch_and_build.py
+
+      - name: Commit only if data changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html gld_data.csv
+          if git diff --cached --quiet; then
+            echo "No data change, skip commit."
+          else
+            git commit -m "chore: refresh GLD data $(date -u +%Y-%m-%d)"
+            git push
+          fi
+
+      - name: Compact history (size-triggered or monthly)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SCHEDULE: ${{ github.event.schedule }}
+          FORCE_COMPACT: ${{ inputs.force_compact }}
+        run: |
+          set -e
+          BRANCH="${DEFAULT_BRANCH:-main}"
+          SIZE_KB=$(gh api "repos/${GITHUB_REPOSITORY}" --jq '.size' 2>/dev/null || echo 0)
+          echo "repository size: ${SIZE_KB} KB (threshold 204800 KB = 200 MB)"
+
+          FORCE=false
+          if [ "${SCHEDULE}" = "37 3 1 * *" ] || [ "${FORCE_COMPACT}" = "true" ]; then
+            FORCE=true
+          fi
+
+          if [ "$FORCE" = "true" ] || [ "${SIZE_KB:-0}" -gt 204800 ]; then
+            echo "Compacting to a single-commit history (force=${FORCE})."
+            git checkout --orphan compact-tmp
+            git add -A
+            git -c user.name="github-actions[bot]" \
+                -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+                commit -m "chore: compact repository history"
+            git branch -D "$BRANCH" || true
+            git branch -m "$BRANCH"
+            git push --force origin "$BRANCH"
+            echo "Done. Repository history now has 1 commit."
+          else
+            echo "Below threshold and not a monthly cleanup run, no action needed."
+          fi

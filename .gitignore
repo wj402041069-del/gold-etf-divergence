@@ -1,0 +1,25 @@
+# 只把这四个文件放进仓库：index.html / fetch_and_build.py /
+# gld_data.csv / .github/workflows/update.yml
+# 其余都是本机一次性产物，不入库省空间。
+
+# 原始 xlsx（发行人文件，含逐日数据，禁止再分发）
+gld_history.xlsx
+*.xlsx
+
+# 旧版本地工具（已由 index.html 取代）
+gold-etf-divergence.html
+gold-etf-divergence-ready.html
+prepare_gld.py
+
+# 临时验证脚本 / 打包产物
+_validate.js
+_check*.js
+_c*.js
+*.zip
+
+# 工具与缓存目录
+.workbuddy/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
