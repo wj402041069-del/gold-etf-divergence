@@ -53,6 +53,9 @@
   .ex-item p{font-size:13px;color:#40454e;margin:2px 0}
   .ex-item .num{color:var(--blue);font-weight:600}
   .ex-note{background:#f5f7fa;border-radius:8px;padding:10px 12px;font-size:12px;color:var(--muted);margin-top:14px}
+  .s3help{background:#f5f7fa;border-radius:8px;padding:10px 12px;font-size:12.5px;color:#40454e;margin:0 0 10px}
+  .s3help p{margin:5px 0}
+  .s3help strong{color:var(--ink);font-weight:600}
 </style>
 </head>
 <body>
@@ -87,7 +90,7 @@
     <div id="explain"></div>
     <div class="ex-note">
       <strong>Z-score 是什么</strong>：把某个数值减去最近一段时间的平均、再除以标准差。0＝正常水平，+1＝偏高一点，+2＝少见，−2＝少见地低。这样两条不同单位的曲线才能放在同一张图上比。<br>
-      <strong>三个容易误会的地方</strong>：① 「最新背离 D」和「历史分位」按全历史算，缩放不变；其余三项随当前视图变。② 持仓用的是<strong>实物吨数</strong>，不是基金规模 AUM —— 金价跌会让规模缩水，吨数不会。③ 「背离」只说明两股力量不同步，不等于马上要涨或跌。
+      <strong>四个容易误会的地方</strong>：① 「最新背离 D」和「历史分位」按全历史算，缩放不变；其余几项随当前视图变。② 持仓用的是<strong>实物吨数</strong>，不是基金规模 AUM —— 金价跌会让规模缩水，吨数不会。③ 「背离」只说明两股力量不同步，不等于马上要涨或跌。④ 图 3 的每个点是<strong>一期相对上一期的变化量</strong>，不是价格水平或持仓总量。
     </div>
   </div>
 
@@ -106,9 +109,14 @@
   </div>
 
   <div class="panel">
-    <h2>图 3｜四象限散点：价格变动 × 持仓变化（随当前视图）</h2>
+    <h2>图 3｜四象限散点：每一期「价格变了 % × 持仓变了 吨」 <span class="sub">（随当前视图）</span></h2>
+    <div class="s3help">
+      <p><strong>一句话</strong>：每个点＝某一期比上一期「价格变了百分之几 / 持仓多了或少了多少吨」，<strong>不是那天的金价，也不是那天的持仓总量</strong>。</p>
+      <p><strong>四格怎么分</strong>：竖线左边＝价格跌、右边＝涨；横线上边＝持仓增加、下边＝减少。蓝色高亮的<strong>左上角</strong>＝价跌却增持（越跌越买），是这张图的重点；另外三格分别是追涨、跌了赎回、逢高兑现。</p>
+      <p><strong>点和线</strong>：蓝点是左上角的重点样本，灰点是其余样本；橙色虚线是拟合趋势线，越往右上倾斜说明「价涨、持仓也增」越常见，对应上方卡片的相关系数 r。鼠标悬停任意点可看是哪一期、涨跌多少、增减几吨。</p>
+    </div>
     <div class="chartbox" id="box3"><div id="chart3"></div><div class="overlay" id="ov3"></div><div class="tip" id="tip3"></div></div>
-    <p class="note">左上「价跌 + 增持」即越跌越买。显示范围按当前视图 2–98 分位裁剪；统计使用视图内全样本。</p>
+    <p class="note">显示范围按当前视图 2–98 分位裁剪，避免极端值把图压扁；但 r 与「价跌期 / 其中增持」仍用视图内全样本计算，所以卡片数字和图上可见点数不会完全一致。</p>
   </div>
 
   <div class="panel">
@@ -391,7 +399,7 @@ function drawD(res,a,b){
   return s+'</svg>';
 }
 function drawScatter(res,a,b,vs){
-  var w=920,h=360,L=62,R=18,T=18,B=38,pw=w-L-R,ph=h-T-B;
+  var w=920,h=392,L=62,R=18,T=18,B=70,pw=w-L-R,ph=h-T-B;
   var pts=vs.pts,xs=pts.map(function(q){return q.x;}),ys=pts.map(function(q){return q.y;});
   var xmin=quantile(xs,0.02),xmax=quantile(xs,0.98),ymin=quantile(ys,0.02),ymax=quantile(ys,0.98);
   if(xmax<=xmin){xmin-=1;xmax+=1;}if(ymax<=ymin){ymin-=1;ymax+=1;}
@@ -399,12 +407,10 @@ function drawScatter(res,a,b,vs){
   function Y(v){return T+(ymax-v)/(ymax-ymin)*ph;}
   S.map3={w:w,h:h,L:L,R:R,T:T,B:B,pw:pw,ph:ph,X:X,Y:Y,pts:pts,xmin:xmin,xmax:xmax,ymin:ymin,ymax:ymax};
   var zx=X(0),zy=Y(0);
-  var s=svgHead(w,h,'价格收益与持仓变化四象限','左上象限表示价格下跌但持仓增加');
+  var s=svgHead(w,h,'每一期的价格变化 x 持仓变化','一个点等于一期相对上一期的变化；左上蓝色区域为越跌越买');
   s+='<rect x="'+L+'" y="'+T+'" width="'+Math.max(0,zx-L)+'" height="'+Math.max(0,zy-T)+'" fill="'+SOFT+'" opacity="0.8"/>';
   s+='<line x1="'+zx+'" y1="'+T+'" x2="'+zx+'" y2="'+(T+ph)+'" stroke="#9aa0a8" stroke-width="1"/>';
   s+='<line x1="'+L+'" y1="'+zy+'" x2="'+(L+pw)+'" y2="'+zy+'" stroke="#9aa0a8" stroke-width="1"/>';
-  s+='<text x="'+(L+8)+'" y="'+(T+18)+'" font-size="12" fill="'+BLUE+'">价跌 + 增持（越跌越买）</text>';
-  s+='<text x="'+(L+pw-8)+'" y="'+(T+18)+'" text-anchor="end" font-size="12" fill="'+MUTED+'">价涨 + 增持</text>';
   var l1=vs.intercept+vs.slope*xmin,l2=vs.intercept+vs.slope*xmax;
   l1=Math.max(ymin,Math.min(ymax,l1));l2=Math.max(ymin,Math.min(ymax,l2));
   s+='<line x1="'+X(xmin)+'" y1="'+Y(l1)+'" x2="'+X(xmax)+'" y2="'+Y(l2)+'" stroke="'+ORANGE+'" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.85"/>';
@@ -413,8 +419,20 @@ function drawScatter(res,a,b,vs){
     var hi=q.x<0&&q.y>0;
     s+='<circle cx="'+X(q.x).toFixed(1)+'" cy="'+Y(q.y).toFixed(1)+'" r="'+(hi?3:2.2)+'" fill="'+(hi?BLUE:'#aeb6c2')+'" opacity="'+(hi?0.85:0.55)+'"/>';
   });
-  s+='<text x="'+L+'" y="'+(h-10)+'" font-size="11" fill="'+MUTED+'">价格收益率 %（'+xmin.toFixed(1)+'% ~ '+xmax.toFixed(1)+'%）</text>';
-  s+='<text x="'+(w-R)+'" y="'+(h-10)+'" text-anchor="end" font-size="11" fill="'+MUTED+'">持仓变化 吨（'+ymin.toFixed(1)+' ~ '+ymax.toFixed(1)+'）</text>';
+  var topY=T+18,botY=T+ph-9,leftX=L+8,rightX=L+pw-8;
+  s+='<text x="'+leftX+'" y="'+topY+'" font-size="12" fill="'+BLUE+'">价跌 + 增持｜越跌越买（重点）</text>';
+  s+='<text x="'+rightX+'" y="'+topY+'" text-anchor="end" font-size="12" fill="'+MUTED+'">价涨 + 增持｜追涨</text>';
+  s+='<text x="'+leftX+'" y="'+botY+'" font-size="12" fill="'+MUTED+'">价跌 + 减持｜跌了赎回</text>';
+  s+='<text x="'+rightX+'" y="'+botY+'" text-anchor="end" font-size="12" fill="'+MUTED+'">价涨 + 减持｜逢高兑现</text>';
+  s+='<text x="'+L+'" y="'+(h-46)+'" font-size="11" fill="'+MUTED+'">横轴：本期比上期 价格涨跌 %（'+xmin.toFixed(1)+'% ~ '+xmax.toFixed(1)+'%，左跌右涨）</text>';
+  s+='<text x="'+(w-R)+'" y="'+(h-46)+'" text-anchor="end" font-size="11" fill="'+MUTED+'">纵轴：本期比上期 持仓增减 吨（'+ymin.toFixed(1)+' ~ '+ymax.toFixed(1)+'，上增下减）</text>';
+  s+='<circle cx="'+(L+5)+'" cy="'+(h-27)+'" r="4" fill="'+BLUE+'"/>';
+  s+='<text x="'+(L+15)+'" y="'+(h-23)+'" font-size="11" fill="'+MUTED+'">蓝点＝越跌越买</text>';
+  s+='<circle cx="'+(L+133)+'" cy="'+(h-27)+'" r="3" fill="#aeb6c2"/>';
+  s+='<text x="'+(L+143)+'" y="'+(h-23)+'" font-size="11" fill="'+MUTED+'">灰点＝其余三种情况</text>';
+  s+='<line x1="'+(L+278)+'" y1="'+(h-27)+'" x2="'+(L+308)+'" y2="'+(h-27)+'" stroke="'+ORANGE+'" stroke-width="1.5" stroke-dasharray="6 4"/>';
+  s+='<text x="'+(L+316)+'" y="'+(h-23)+'" font-size="11" fill="'+MUTED+'">橙色虚线＝趋势线（越陡越同步）</text>';
+  s+='<text x="'+L+'" y="'+(h-8)+'" font-size="11" fill="'+MUTED+'">一个点＝一期（日/周/月）相对上一期的变化，不是价格水平也不是持仓总量；显示按 2–98 分位裁剪，统计用视图内全样本</text>';
   return s+'</svg>';
 }
 function drawNav(res,view){
@@ -470,6 +488,10 @@ function renderExplain(vs){
       '衡量「价格涨跌」和「持仓增减」是否同步：+1＝完全同步，0＝没关系，−1＝完全反向。',
       '当前属于'+rWord+'：'+rDetail+'。',
       '它只说明同向程度，不说明谁导致谁，也不能用来预测涨跌。']},
+    {h:'图 3 四象限散点怎么看',p:[
+      '一个点＝一期（'+freqName+'）相对上一期的<strong>变化</strong>：横轴是价格涨跌 %（左跌右涨），纵轴是持仓增减 吨（上增下减）。不是价格水平，也不是持仓总量。',
+      '蓝色高亮的左上角是「价跌 + 增持」＝越跌越买，当前视图统计到 '+vs.buy+' 期（占全部 '+vs.down+' 个价跌期的 '+(vs.ratio*100).toFixed(1)+'%）；灰点是另外三种情况：追涨、跌了赎回、逢高兑现。',
+      '橙色虚线是拟合趋势线，越往右上倾斜说明「价涨、持仓也增」越常见，对应上面的 r。图上点数可能比统计值略少，因为极端值按 2–98 分位裁剪不显示；悬停任意点可看是哪一期、涨跌多少、增减几吨。']},
     {h:'视图区间 <span class="num">'+span+'，共 '+n+' 期</span>',p:[
       '这是你现在看到的时间范围；'+n+' 是「'+freqName+'」的数量，不是天数。',
       '如果显示的是全部 20 年，最近几个月在图上会被挤得很小 —— 点上方的「近 1 年 / 近 3 年」，或用滚轮放大，就能看清最近。']}
