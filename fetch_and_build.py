@@ -213,6 +213,7 @@ def write_llms(rows):
 
 ## 链接
 - 在线看板: {pages}
+- 看板中心（聚合入口，本页为第 8 个板块「黄金ETF背离」）: https://wj-dashboards.pages.dev/
 - 本摘要: {pages}llms.txt
 - 源码 / 手动刷新: {repo}（Actions -> Refresh GLD divergence data -> Run workflow）
 - 逐日数据: {pages}gld_data.csv

@@ -9,6 +9,7 @@
 | 线路 | 地址 | 说明 |
 |---|---|---|
 | **主地址（看板）** | [**https://wj402041069-del.github.io/gold-etf-divergence/**](https://wj402041069-del.github.io/gold-etf-divergence/) | GitHub Pages 托管，手机 / 电脑浏览器直接打开；每工作日 UTC 06:13 自动刷新 |
+| **看板中心（聚合入口）** | [**https://wj-dashboards.pages.dev/**](https://wj-dashboards.pages.dev/) | 8 个看板顶部一键切换，本页是**第 8 个板块**「黄金ETF背离」；手机上更方便 |
 | **源码 / 手动刷新** | [**https://github.com/wj402041069-del/gold-etf-divergence**](https://github.com/wj402041069-del/gold-etf-divergence) | Actions → Refresh GLD divergence data → Run workflow |
 | **给 AI 的文本摘要（推荐发这个）** | [**https://wj402041069-del.github.io/gold-etf-divergence/llms.txt**](https://wj402041069-del/gold-etf-divergence/llms.txt) | 纯文本，自动跟随数据日更新；问 AI / 丢给大模型时发这个链接，别发网页 |
 | **离线快照** | 仓库根目录 `index.html` | 下载后双击即可看，数据已烤死在 HTML 里，断网也能看 |
@@ -406,6 +407,7 @@ TradingView 没有全球黄金 ETF 实物持仓吨数曲线，也不支持导入
 | 2026-11-13 | 图 3 讲不清：四象限全部标注 + 图例、轴含义直白化、新增「一句话/四格怎么分/点和线」说明块、小白说明面板加第 6 段、README 新增 5.4、`llms.txt` 补读图说明 |
 | 2026-11-13 | 图 3 补回时间维度：末尾 N 期紫圈高亮 + 按时间连线 + 末端「最新」，可切 5/10/20/关闭，默认 10；显示范围强制纳入最近 N 期避免裁剪；填充色仍表示象限，紫色描边专表时间 |
 | 2026-11-13 | 图 1 与图 2 之间新增「参照图｜黄金真实走势」：GLD 原始收盘价（USD/份），不做 Z-score、不用双轴；三图 `L/R` 对齐共用 `axisX` / `bindChart` / `showHover`，hover 竖线像素级联动，缩放 / 平移 / 框选 / 双击同步；新增「自适应 / 从 0 起」纵轴开关、小白说明第 2 段、README 5.5、`llms.txt` 参照图段 |
+| 2026-11-13 | 上架聚合看板 `https://wj-dashboards.pages.dev/` 成为**第 8 个板块**「黄金ETF背离」（顶部 tab 与 iframe 懒加载，与前 7 个一致）；README 顶部地址表与 `llms.txt` 链接段补看板中心入口 |
 
 ```text
 验证记录（2026-11-13）
