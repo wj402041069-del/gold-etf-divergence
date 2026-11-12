@@ -114,9 +114,14 @@
       <p><strong>一句话</strong>：每个点＝某一期比上一期「价格变了百分之几 / 持仓多了或少了多少吨」，<strong>不是那天的金价，也不是那天的持仓总量</strong>。</p>
       <p><strong>四格怎么分</strong>：竖线左边＝价格跌、右边＝涨；横线上边＝持仓增加、下边＝减少。蓝色高亮的<strong>左上角</strong>＝价跌却增持（越跌越买），是这张图的重点；另外三格分别是追涨、跌了赎回、逢高兑现。</p>
       <p><strong>点和线</strong>：蓝点是左上角的重点样本，灰点是其余样本；橙色虚线是拟合趋势线，越往右上倾斜说明「价涨、持仓也增」越常见，对应上方卡片的相关系数 r。鼠标悬停任意点可看是哪一期、涨跌多少、增减几吨。</p>
+      <p><strong>紫色圈和连线</strong>：当前视图<strong>最后 N 期</strong>的点会加紫圈，并按时间先后连成一条短轨迹，末端标「最新」。填充色仍表示象限（蓝／灰），紫圈只表示「最近」，两个维度分开，不会混淆。这样能看出最近是往左上角（越跌越买）走，还是往别处走。</p>
+    </div>
+    <div class="ranges" id="recentRanges" style="margin:0 0 10px">
+      <span class="sub" style="align-self:center;margin-right:2px">高亮最近</span>
+      <button data-n="5">5 期</button><button data-n="10" class="on">10 期</button><button data-n="20">20 期</button><button data-n="0">关闭</button>
     </div>
     <div class="chartbox" id="box3"><div id="chart3"></div><div class="overlay" id="ov3"></div><div class="tip" id="tip3"></div></div>
-    <p class="note">显示范围按当前视图 2–98 分位裁剪，避免极端值把图压扁；但 r 与「价跌期 / 其中增持」仍用视图内全样本计算，所以卡片数字和图上可见点数不会完全一致。</p>
+    <p class="note">显示范围按当前视图 2–98 分位裁剪，避免极端值把图压扁；最近 N 期会一并纳入范围，保证高亮点不被裁掉。r 与「价跌期 / 其中增持」仍用视图内全样本计算，所以卡片数字和图上可见点数不会完全一致。切换视图或频率时，「最后 N 期」自动跟着变。</p>
   </div>
 
   <div class="panel">
@@ -153,9 +158,9 @@ window.GLD_UPDATED = "2026-11-11";
 (function(){
 'use strict';
 
-var BLUE='#185fa5', ORANGE='#ba7517', GRID='#e3e5e9', MUTED='#6b7280', INK='#22262e', SOFT='#e6f1fb', RED='#fbe9e9';
+var BLUE='#185fa5', ORANGE='#ba7517', GRID='#e3e5e9', MUTED='#6b7280', INK='#22262e', SOFT='#e6f1fb', RED='#fbe9e9', PURPLE='#534ab7';
 var S={rows:[],agg:[],res:null,view:{a:0,b:0},map1:null,map2:null,map3:null,mapN:null,
-  freq:'weekly',win:52,drag:null,brush:null,hover:-1};
+  freq:'weekly',win:52,drag:null,brush:null,hover:-1,recent:10};
 
 function $(id){return document.getElementById(id);}
 function pad(n){return n<10?'0'+n:''+n;}
@@ -403,6 +408,14 @@ function drawScatter(res,a,b,vs){
   var pts=vs.pts,xs=pts.map(function(q){return q.x;}),ys=pts.map(function(q){return q.y;});
   var xmin=quantile(xs,0.02),xmax=quantile(xs,0.98),ymin=quantile(ys,0.02),ymax=quantile(ys,0.98);
   if(xmax<=xmin){xmin-=1;xmax+=1;}if(ymax<=ymin){ymin-=1;ymax+=1;}
+  var recentN=S.recent||0,recent=recentN>0?pts.slice(-recentN):[],recentIdx={};
+  recent.forEach(function(q){recentIdx[q.idx]=1;});
+  // 最近 N 期一律纳入显示范围，否则会被 2–98 分位裁掉、高亮白做
+  recent.forEach(function(q){
+    if(q.x<xmin)xmin=q.x;if(q.x>xmax)xmax=q.x;
+    if(q.y<ymin)ymin=q.y;if(q.y>ymax)ymax=q.y;
+  });
+  if(xmax<=xmin){xmin-=1;xmax+=1;}if(ymax<=ymin){ymin-=1;ymax+=1;}
   function X(v){return L+(v-xmin)/(xmax-xmin)*pw;}
   function Y(v){return T+(ymax-v)/(ymax-ymin)*ph;}
   S.map3={w:w,h:h,L:L,R:R,T:T,B:B,pw:pw,ph:ph,X:X,Y:Y,pts:pts,xmin:xmin,xmax:xmax,ymin:ymin,ymax:ymax};
@@ -414,11 +427,22 @@ function drawScatter(res,a,b,vs){
   var l1=vs.intercept+vs.slope*xmin,l2=vs.intercept+vs.slope*xmax;
   l1=Math.max(ymin,Math.min(ymax,l1));l2=Math.max(ymin,Math.min(ymax,l2));
   s+='<line x1="'+X(xmin)+'" y1="'+Y(l1)+'" x2="'+X(xmax)+'" y2="'+Y(l2)+'" stroke="'+ORANGE+'" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.85"/>';
+  // 最近 N 期按时间先后连成短轨迹，补回散点图丢掉的时间维度
+  if(recent.length>1){
+    var trail=recent.map(function(q,i){return (i?' L':'M')+X(q.x).toFixed(1)+' '+Y(q.y).toFixed(1);}).join('');
+    s+='<path d="'+trail+'" fill="none" stroke="'+PURPLE+'" stroke-width="1.6" opacity="0.6" stroke-linejoin="round"/>';
+  }
   pts.forEach(function(q){
     if(q.x<xmin||q.x>xmax||q.y<ymin||q.y>ymax)return;
-    var hi=q.x<0&&q.y>0;
-    s+='<circle cx="'+X(q.x).toFixed(1)+'" cy="'+Y(q.y).toFixed(1)+'" r="'+(hi?3:2.2)+'" fill="'+(hi?BLUE:'#aeb6c2')+'" opacity="'+(hi?0.85:0.55)+'"/>';
+    var hi=q.x<0&&q.y>0,isR=recentIdx[q.idx]?1:0;
+    s+='<circle cx="'+X(q.x).toFixed(1)+'" cy="'+Y(q.y).toFixed(1)+'" r="'+(isR?4.5:(hi?3:2.2))+'" fill="'+(hi?BLUE:'#aeb6c2')+'"'
+      +(isR?' stroke="'+PURPLE+'" stroke-width="2"':'')+' opacity="'+(isR?0.95:(hi?0.85:0.55))+'"/>';
   });
+  if(recent.length){
+    var lq=recent[recent.length-1],lx=X(lq.x),ly=Y(lq.y),right=lx+12<=w-R-30;
+    s+='<circle cx="'+lx.toFixed(1)+'" cy="'+ly.toFixed(1)+'" r="8" fill="none" stroke="'+PURPLE+'" stroke-width="1.3"/>';
+    s+='<text x="'+(right?lx+12:lx-12).toFixed(1)+'" y="'+Math.max(T+12,ly-9).toFixed(1)+'" text-anchor="'+(right?'start':'end')+'" font-size="11" fill="'+PURPLE+'">最新</text>';
+  }
   var topY=T+18,botY=T+ph-9,leftX=L+8,rightX=L+pw-8;
   s+='<text x="'+leftX+'" y="'+topY+'" font-size="12" fill="'+BLUE+'">价跌 + 增持｜越跌越买（重点）</text>';
   s+='<text x="'+rightX+'" y="'+topY+'" text-anchor="end" font-size="12" fill="'+MUTED+'">价涨 + 增持｜追涨</text>';
@@ -432,7 +456,12 @@ function drawScatter(res,a,b,vs){
   s+='<text x="'+(L+143)+'" y="'+(h-23)+'" font-size="11" fill="'+MUTED+'">灰点＝其余三种情况</text>';
   s+='<line x1="'+(L+278)+'" y1="'+(h-27)+'" x2="'+(L+308)+'" y2="'+(h-27)+'" stroke="'+ORANGE+'" stroke-width="1.5" stroke-dasharray="6 4"/>';
   s+='<text x="'+(L+316)+'" y="'+(h-23)+'" font-size="11" fill="'+MUTED+'">橙色虚线＝趋势线（越陡越同步）</text>';
-  s+='<text x="'+L+'" y="'+(h-8)+'" font-size="11" fill="'+MUTED+'">一个点＝一期（日/周/月）相对上一期的变化，不是价格水平也不是持仓总量；显示按 2–98 分位裁剪，统计用视图内全样本</text>';
+  if(recentN>0){
+    s+='<circle cx="'+(L+575)+'" cy="'+(h-27)+'" r="4.5" fill="#fff" stroke="'+PURPLE+'" stroke-width="2"/>';
+    s+='<text x="'+(L+587)+'" y="'+(h-23)+'" font-size="11" fill="'+MUTED+'">紫圈＋连线＝最近 '+recentN+' 期（末端最新）</text>';
+  }
+  s+='<text x="'+L+'" y="'+(h-8)+'" font-size="11" fill="'+MUTED+'">一个点＝一期相对上一期的变化，不是价格水平或持仓总量；显示按 2–98 分位裁剪'
+    +(recentN>0?'，最近 '+recentN+' 期强制纳入':'')+'；统计用视图内全样本</text>';
   return s+'</svg>';
 }
 function drawNav(res,view){
@@ -491,7 +520,10 @@ function renderExplain(vs){
     {h:'图 3 四象限散点怎么看',p:[
       '一个点＝一期（'+freqName+'）相对上一期的<strong>变化</strong>：横轴是价格涨跌 %（左跌右涨），纵轴是持仓增减 吨（上增下减）。不是价格水平，也不是持仓总量。',
       '蓝色高亮的左上角是「价跌 + 增持」＝越跌越买，当前视图统计到 '+vs.buy+' 期（占全部 '+vs.down+' 个价跌期的 '+(vs.ratio*100).toFixed(1)+'%）；灰点是另外三种情况：追涨、跌了赎回、逢高兑现。',
-      '橙色虚线是拟合趋势线，越往右上倾斜说明「价涨、持仓也增」越常见，对应上面的 r。图上点数可能比统计值略少，因为极端值按 2–98 分位裁剪不显示；悬停任意点可看是哪一期、涨跌多少、增减几吨。']},
+      '橙色虚线是拟合趋势线，越往右上倾斜说明「价涨、持仓也增」越常见，对应上面的 r。图上点数可能比统计值略少，因为极端值按 2–98 分位裁剪不显示；悬停任意点可看是哪一期、涨跌多少、增减几吨。',
+      S.recent>0
+        ? '带紫圈、被细线连起来的是当前视图<strong>最后 '+S.recent+' 期</strong>（末端标「最新」）：顺着这条线按时间看，就知道最近在往哪个象限移动。填充色仍表示象限，紫圈只表示「最近」，两个维度互不冲突。'
+        : '当前已关闭「最近 N 期」高亮，可在图 3 上方按钮重新打开。']},
     {h:'视图区间 <span class="num">'+span+'，共 '+n+' 期</span>',p:[
       '这是你现在看到的时间范围；'+n+' 是「'+freqName+'」的数量，不是天数。',
       '如果显示的是全部 20 年，最近几个月在图上会被挤得很小 —— 点上方的「近 1 年 / 近 3 年」，或用滚轮放大，就能看清最近。']}
@@ -688,6 +720,13 @@ $('freq').addEventListener('change',function(){
   if(S.rows.length)build();
 });
 $('win').addEventListener('change',function(){if(S.rows.length)build();});
+$('recentRanges').addEventListener('click',function(ev){
+  var b=ev.target.closest('button');if(!b)return;
+  Array.prototype.forEach.call(this.querySelectorAll('button'),function(x){x.className='';});
+  b.className='on';
+  S.recent=parseInt(b.getAttribute('data-n'),10);
+  render();
+});
 $('ranges').addEventListener('click',function(ev){
   var b=ev.target.closest('button');if(!b)return;
   Array.prototype.forEach.call(this.querySelectorAll('button'),function(x){x.className='';});
