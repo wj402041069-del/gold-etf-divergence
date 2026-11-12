@@ -78,7 +78,7 @@
       <div><label>&nbsp;</label><button id="reset">重置视图</button></div>
       <div><label>手动导入 CSV（离线兜底）</label><input type="file" id="file" accept=".csv,.txt" style="max-width:190px"></div>
     </div>
-    <p class="hint">滚轮缩放（以光标为中心）· 按住左键拖动平移 · 双击重置 · 鼠标悬停显示日期与数值 · 底部导航条可框选区间</p>
+    <p class="hint">滚轮缩放（以光标为中心）· 按住左键拖动平移 · 双击重置 · 鼠标悬停显示日期与数值 · 底部导航条可框选区间。图 1 / 参照图 / 图 2 共用同一时间轴：在任意一张图上缩放、平移或悬停，三张图会一起动。</p>
     <div id="err" class="err"></div>
     <p class="note" id="status">载入中 ...</p>
   </div>
@@ -90,7 +90,7 @@
     <div id="explain"></div>
     <div class="ex-note">
       <strong>Z-score 是什么</strong>：把某个数值减去最近一段时间的平均、再除以标准差。0＝正常水平，+1＝偏高一点，+2＝少见，−2＝少见地低。这样两条不同单位的曲线才能放在同一张图上比。<br>
-      <strong>四个容易误会的地方</strong>：① 「最新背离 D」和「历史分位」按全历史算，缩放不变；其余几项随当前视图变。② 持仓用的是<strong>实物吨数</strong>，不是基金规模 AUM —— 金价跌会让规模缩水，吨数不会。③ 「背离」只说明两股力量不同步，不等于马上要涨或跌。④ 图 3 的每个点是<strong>一期相对上一期的变化量</strong>，不是价格水平或持仓总量。
+      <strong>五个容易误会的地方</strong>：① 「最新背离 D」和「历史分位」按全历史算，缩放不变；其余几项随当前视图变。② 持仓用的是<strong>实物吨数</strong>，不是基金规模 AUM —— 金价跌会让规模缩水，吨数不会。③ 「背离」只说明两股力量不同步，不等于马上要涨或跌。④ 图 3 的每个点是<strong>一期相对上一期的变化量</strong>，不是价格水平或持仓总量。⑤ 参照图是<strong>真实价格</strong>，不是 Z-score；纵轴默认按视图自适应，看绝对涨幅请切「从 0 起」。
     </div>
   </div>
 
@@ -99,7 +99,19 @@
       <span class="legend"><span class="dot" style="background:#185fa5"></span>持仓 Z<span class="dot" style="background:#ba7517"></span>价格 Z</span>
     </h2>
     <div class="chartbox" id="box1"><div id="chart1"></div><div class="overlay" id="ov1"></div><div class="tip" id="tip1"></div></div>
-    <p class="note">浅色竖带为 |D| &gt; 1.5σ 的时段。悬停时图 1 与图 2 的竖线联动到同一日期。</p>
+    <p class="note">浅色竖带为 |D| &gt; 1.5σ 的时段。悬停时图 1 / 参照图 / 图 2 的竖线联动到同一日期。</p>
+  </div>
+
+  <div class="panel">
+    <h2>参照图｜黄金真实走势（GLD 收盘价，USD / 份，不做 Z-score）
+      <span class="legend"><span class="dot" style="background:#ba7517"></span>真实价格<span class="dot" style="background:#fbe9e9"></span>|D| &gt; 1.5σ 时段</span>
+    </h2>
+    <div class="ranges" id="priceAxisRanges" style="margin:0 0 10px">
+      <span class="sub" style="align-self:center;margin-right:2px">纵轴</span>
+      <button data-z="0" class="on">自适应（看波动）</button><button data-z="1">从 0 起（看真实幅度）</button>
+    </div>
+    <div class="chartbox" id="boxP"><div id="chartP"></div><div class="overlay" id="ovP"></div><div class="tip" id="tipP"></div></div>
+    <p class="note">这条线是 <strong>GLD 每份份额的原始收盘价</strong>，单位美元，没有任何标准化或对数处理。图 1 里同色的橙色线是它的 Z-score —— 形状相近但含义完全不同：这里看绝对价位与涨了多少美元，图 1 看它偏离近期均值几个标准差。浅色竖带与图 1 完全相同，方便对照「背离高发时价格处在什么位置」。<br>纵轴默认按当前视图的最小／最大值自适应（图上会标出范围），短期波动会被放大；想看长期真实幅度请切「从 0 起」。<strong>GLD 份额价格跟随现货金价，但不等于现货金价 USD/oz</strong>，也不要拿它直接换算吨数。悬停可看该期收盘价、持仓吨数与两条 Z / D，和另外两张图同步。</p>
   </div>
 
   <div class="panel">
@@ -159,8 +171,8 @@ window.GLD_UPDATED = "2026-11-11";
 'use strict';
 
 var BLUE='#185fa5', ORANGE='#ba7517', GRID='#e3e5e9', MUTED='#6b7280', INK='#22262e', SOFT='#e6f1fb', RED='#fbe9e9', PURPLE='#534ab7';
-var S={rows:[],agg:[],res:null,view:{a:0,b:0},map1:null,map2:null,map3:null,mapN:null,
-  freq:'weekly',win:52,drag:null,brush:null,hover:-1,recent:10};
+var S={rows:[],agg:[],res:null,view:{a:0,b:0},map1:null,mapP:null,map2:null,map3:null,mapN:null,
+  freq:'weekly',win:52,drag:null,brush:null,hover:-1,recent:10,priceZero:false};
 
 function $(id){return document.getElementById(id);}
 function pad(n){return n<10?'0'+n:''+n;}
@@ -350,6 +362,35 @@ function refLines(s,L,w,Y,maxV){
   return s;
 }
 
+// |D| > 1.5σ 的连续时段：图 1 与参照图共用，保证两图竖带位置完全一致
+function strongSegs(res,a,b){
+  var segs=[],cur=null,i;
+  for(i=a;i<=b;i++){
+    var strong=res.D[i]!==null&&Math.abs(res.D[i])>1.5;
+    if(strong){if(!cur)cur={a:i,b:i};else cur.b=i;}
+    else if(cur){segs.push(cur);cur=null;}
+  }
+  if(cur)segs.push(cur);
+  return segs;
+}
+// 把刻度步长取整到 1 / 2 / 5 × 10^n，价格轴标签才不会出现 312.37 这种数字
+function niceNum(range,round){
+  if(!(range>0))return 1;
+  var e=Math.floor(Math.log(range)/Math.LN10),f=range/Math.pow(10,e),nf;
+  if(round)nf=f<1.5?1:(f<3?2:(f<7?5:10));
+  else nf=f<=1?1:(f<=2?2:(f<=5?5:10));
+  return nf*Math.pow(10,e);
+}
+function priceAxis(s,L,w,Y,pmin,pmax){
+  var step=niceNum((pmax-pmin)/4,true),digits=step<1?2:(step<10?1:0),k=0;
+  for(var v=Math.ceil(pmin/step)*step;v<=pmax+step*0.001&&k<12;v+=step,k++){
+    var y=Y(v);
+    s+='<line x1="'+L+'" y1="'+y.toFixed(1)+'" x2="'+w+'" y2="'+y.toFixed(1)+'" stroke="'+GRID+'" stroke-width="0.7"/>';
+    s+='<text x="'+(L-8)+'" y="'+(y+4).toFixed(1)+'" text-anchor="end" font-size="11" fill="'+MUTED+'">'+v.toFixed(digits)+'</text>';
+  }
+  return s;
+}
+
 function drawZ(res,a,b){
   var w=920,h=320,L=52,R=18,T=18,B=38,pw=w-L-R,ph=h-T-B,i;
   var maxZ=2.5;
@@ -363,14 +404,7 @@ function drawZ(res,a,b){
   S.map1={w:w,h:h,L:L,R:R,T:T,B:B,pw:pw,ph:ph,a:a,b:b,X:X,Y:Y};
   var s=svgHead(w,h,'滚动 Z-score 双线','持仓与价格各自标准化后的曲线，含 0 与正负 1、2 个标准差参考线');
   s=refLines(s,L,w-R,Y,maxZ);
-  var segs=[],cur=null;
-  for(i=a;i<=b;i++){
-    var strong=res.D[i]!==null&&Math.abs(res.D[i])>1.5;
-    if(strong){if(!cur)cur={a:i,b:i};else cur.b=i;}
-    else if(cur){segs.push(cur);cur=null;}
-  }
-  if(cur)segs.push(cur);
-  segs.forEach(function(g){
+  strongSegs(res,a,b).forEach(function(g){
     s+='<rect x="'+X(g.a)+'" y="'+T+'" width="'+Math.max(1,X(g.b)-X(g.a))+'" height="'+ph+'" fill="'+RED+'" opacity="0.8"/>';
   });
   [[res.zt,BLUE],[res.zp,ORANGE]].forEach(function(pair){
@@ -382,6 +416,44 @@ function drawZ(res,a,b){
     }
     if(started)s+='<path d="'+d+'" fill="none" stroke="'+pair[1]+'" stroke-width="1.8" stroke-linejoin="round"/>';
   });
+  s=axisX(s,res,a,b,X,T,ph,h);
+  return s+'</svg>';
+}
+// 参照图：GLD 原始收盘价，不做 Z-score、不做双轴、不做对数处理
+function drawPrice(res,a,b){
+  // L / R 与图 1、图 2 完全一致，保证三张图的联动竖线像素级对齐
+  var w=920,h=250,L=52,R=18,T=18,B=38,pw=w-L-R,ph=h-T-B,i;
+  var lo=Infinity,hi=-Infinity;
+  for(i=a;i<=b;i++){var pv=res.a[i].p;if(pv<lo)lo=pv;if(pv>hi)hi=pv;}
+  if(!isFinite(lo)){lo=0;hi=1;}
+  var pmin,pmax;
+  if(S.priceZero){pmin=0;pmax=hi*1.08||1;}
+  else{
+    var pad=(hi-lo)*0.1||Math.max(1,hi*0.02);
+    pmin=Math.max(0,lo-pad);pmax=hi+pad;
+  }
+  if(pmax<=pmin)pmax=pmin+1;
+  function X(k){return L+(b<=a?0:(k-a)/(b-a)*pw);}
+  function Y(v){return T+(pmax-v)/(pmax-pmin)*ph;}
+  S.mapP={w:w,h:h,L:L,R:R,T:T,B:B,pw:pw,ph:ph,a:a,b:b,X:X,Y:Y,pmin:pmin,pmax:pmax};
+  var s=svgHead(w,h,'黄金真实走势','GLD 每份份额收盘价，美元；纵轴为真实价格，不是标准差');
+  strongSegs(res,a,b).forEach(function(g){
+    s+='<rect x="'+X(g.a)+'" y="'+T+'" width="'+Math.max(1,X(g.b)-X(g.a))+'" height="'+ph+'" fill="'+RED+'" opacity="0.8"/>';
+  });
+  s=priceAxis(s,L,w-R,Y,pmin,pmax);
+  var d='',started=false;
+  for(i=a;i<=b;i++){
+    d+=(started?' L':'M')+X(i).toFixed(1)+' '+Y(res.a[i].p).toFixed(1);
+    started=true;
+  }
+  if(started){
+    s+='<path d="'+d+' L'+X(b).toFixed(1)+' '+Y(pmin).toFixed(1)+' L'+X(a).toFixed(1)+' '+Y(pmin).toFixed(1)+' Z" fill="'+ORANGE+'" opacity="0.10"/>';
+    s+='<path d="'+d+'" fill="none" stroke="'+ORANGE+'" stroke-width="2" stroke-linejoin="round"/>';
+    var lastX=X(b),lastY=Y(res.a[b].p);
+    s+='<circle cx="'+lastX.toFixed(1)+'" cy="'+lastY.toFixed(1)+'" r="3.6" fill="'+ORANGE+'"/>';
+    s+='<text x="'+(lastX-8).toFixed(1)+'" y="'+Math.max(T+14,lastY-9).toFixed(1)+'" text-anchor="end" font-size="11" font-weight="600" fill="'+ORANGE+'">'+res.a[b].p.toFixed(2)+'</text>';
+  }
+  s+='<text x="'+(L+4)+'" y="'+(T+12)+'" font-size="11" fill="'+MUTED+'">USD / 份　纵轴 '+pmin.toFixed(0)+' – '+pmax.toFixed(0)+(S.priceZero?'（从 0 起）':'（随视图自适应）')+'</text>';
   s=axisX(s,res,a,b,X,T,ph,h);
   return s+'</svg>';
 }
@@ -505,6 +577,12 @@ function renderExplain(vs){
       'D = Z(持仓) − Z(价格)。先把两条曲线各自换算成「离近期平均有多远」，再相减，单位都是标准差，所以能直接比。',
       '正数＝持仓比价格强，常见于价格在跌、但买盘还在增持（越跌越买）；负数＝持仓相对更弱。',
       '当前是 '+signed(cur)+' 个标准差，'+dWord+'；一般超过 +2 才算历史罕见。']},
+    {h:'参照图｜真实价格（不是 Z-score）',p:[
+      '位于图 1 与图 2 之间的橙色线，是 <strong>GLD 每份份额的真实收盘价（美元）</strong>：当前视图从 '+r.a[S.view.a].p.toFixed(2)+' 到 '+r.a[S.view.b].p.toFixed(2)+' USD，区间涨跌 '+signed((r.a[S.view.b].p/r.a[S.view.a].p-1)*100,1)+'%。没有任何标准化，纵轴单位就是钱。',
+      '图 1 里同色的橙色线是它的 Z-score。两条线形状相近但含义不同：参照图回答「现在多少钱、涨了多少美元」，图 1 回答「相对近期平均偏离了几个标准差」。<strong>判断背离看图 1 / 图 2，核对真实价位看图 1 与图 2 中间这张参照图。</strong>',
+      '纵轴默认按当前视图的最高／最低价自适应，短期小波动会被<strong>放大</strong>，图上已标出纵轴范围；想看长期真实幅度，点上方「从 0 起」。截断的纵轴最容易制造「看起来暴涨暴跌」的错觉，这一点要留意。',
+      'GLD 份额价格跟随现货金价，但<strong>不等于现货金价 USD/oz</strong>（每份大致对应十分之一盎司，且逐年扣管理费），不要拿它换算现货金价或黄金吨数。',
+      '它和图 1 / 图 2 共用同一时间轴：滚轮缩放、拖动平移、双击重置、导航条框选、鼠标悬停都会一起动，连浅色竖带的位置也完全一致。']},
     {h:'历史分位 <span class="num">'+(pct===null?'—':pct.toFixed(1)+'%')+'</span>',p:[
       '把有记录以来每一期的 D 从小到大排队，当前值排在第 '+(pct===null?'—':pct.toFixed(1))+'% 的位置 —— 历史上只有约 '+rest+'% 的时间比现在更背离。',
       '分位越高越少见：超过 95% 才算极端，低于 50% 属于平常。当前'+pWord+'。',
@@ -551,6 +629,7 @@ function render(){
   var vs=viewStats(S.res,S.view.a,S.view.b);
   renderCards(vs);
   $('chart1').innerHTML=drawZ(S.res,S.view.a,S.view.b);
+  $('chartP').innerHTML=drawPrice(S.res,S.view.a,S.view.b);
   $('chart2').innerHTML=drawD(S.res,S.view.a,S.view.b);
   $('chart3').innerHTML=drawScatter(S.res,S.view.a,S.view.b,vs);
   $('nav').innerHTML=drawNav(S.res,S.view);
@@ -561,8 +640,8 @@ function render(){
 
 function clearHover(){
   S.hover=-1;
-  ['ov1','ov2','ov3'].forEach(function(id){$(id).innerHTML='';});
-  ['tip1','tip2','tip3'].forEach(function(id){$(id).style.display='none';});
+  ['ov1','ovP','ov2','ov3'].forEach(function(id){$(id).innerHTML='';});
+  ['tip1','tipP','tip2','tip3'].forEach(function(id){$(id).style.display='none';});
 }
 function overlay(map,idx,kind){
   var s='<svg viewBox="0 0 '+map.w+' '+map.h+'" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">';
@@ -573,6 +652,9 @@ function overlay(map,idx,kind){
     if(res.zp[idx]!==null)s+='<circle cx="'+x+'" cy="'+map.Y(res.zp[idx])+'" r="4" fill="#fff" stroke="'+ORANGE+'" stroke-width="2"/>';
   }else if(kind===2){
     if(res.D[idx]!==null)s+='<circle cx="'+x+'" cy="'+map.Y(res.D[idx])+'" r="4" fill="#fff" stroke="'+(res.D[idx]>=0?BLUE:ORANGE)+'" stroke-width="2"/>';
+  }else if(kind===4){
+    var pv=res.a[idx].p;
+    if(pv>=map.pmin&&pv<=map.pmax)s+='<circle cx="'+x+'" cy="'+map.Y(pv)+'" r="4.5" fill="#fff" stroke="'+ORANGE+'" stroke-width="2"/>';
   }
   return s+'</svg>';
 }
@@ -585,18 +667,19 @@ function tipHTML(idx){
     +'<span class="k">持仓 Z</span> '+z(r.zt[idx])+'　<span class="k">价格 Z</span> '+z(r.zp[idx])+'<br>'
     +'<span class="k">背离 D</span> '+z(r.D[idx]);
 }
+// 三张主图共用一次 hover：竖线、圆点、浮层全部落在同一期
 function showHover(idx,ev,box,tipId){
   S.hover=idx;
   $('ov1').innerHTML=overlay(S.map1,idx,1);
+  $('ovP').innerHTML=overlay(S.mapP,idx,4);
   $('ov2').innerHTML=overlay(S.map2,idx,2);
   var tip=$(tipId),rect=box.getBoundingClientRect();
   tip.innerHTML=tipHTML(idx);
   tip.style.display='block';
   var lx=ev.clientX-rect.left+14,ly=ev.clientY-rect.top-88;
   if(lx+190>rect.width)lx=ev.clientX-rect.left-194;
-  if(ly<4)ly=8;
   tip.style.left=Math.max(4,lx)+'px';
-  tip.style.top=ly+'px';
+  tip.style.top=Math.max(4,ly)+'px';
 }
 function showScatterHover(q,ev,box){
   var tip=$('tip3'),rect=box.getBoundingClientRect();
@@ -640,14 +723,7 @@ function bindChart(boxId,tipId,mapKey,kind){
     }
     var idx=idxFromEvent(ev,box,map);
     if(idx<0){clearHover();return;}
-    S.hover=idx;
-    $('ov1').innerHTML=overlay(S.map1,idx,1);
-    $('ov2').innerHTML=overlay(S.map2,idx,2);
-    var tip=$(tipId),r=box.getBoundingClientRect();
-    tip.innerHTML=tipHTML(idx);tip.style.display='block';
-    var lx=ev.clientX-r.left+14,ly=ev.clientY-r.top-88;
-    if(lx+190>r.width)lx=ev.clientX-r.left-194;
-    tip.style.left=Math.max(4,lx)+'px';tip.style.top=Math.max(4,ly)+'px';
+    showHover(idx,ev,box,tipId);
   });
   box.addEventListener('mouseleave',function(){S.drag=null;clearHover();});
   if(kind!==3){
@@ -720,6 +796,13 @@ $('freq').addEventListener('change',function(){
   if(S.rows.length)build();
 });
 $('win').addEventListener('change',function(){if(S.rows.length)build();});
+$('priceAxisRanges').addEventListener('click',function(ev){
+  var b=ev.target.closest('button');if(!b)return;
+  Array.prototype.forEach.call(this.querySelectorAll('button'),function(x){x.className='';});
+  b.className='on';
+  S.priceZero=b.getAttribute('data-z')==='1';
+  render();
+});
 $('recentRanges').addEventListener('click',function(ev){
   var b=ev.target.closest('button');if(!b)return;
   Array.prototype.forEach.call(this.querySelectorAll('button'),function(x){x.className='';});
@@ -749,6 +832,7 @@ $('file').addEventListener('change',function(ev){
 });
 
 bindChart('box1','tip1','map1',1);
+bindChart('boxP','tipP','mapP',4);
 bindChart('box2','tip2','map2',2);
 bindChart('box3','tip3','map3',3);
 bindNav();
