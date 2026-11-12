@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#185fa5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="黄金ETF背离">
 <title>黄金 ETF 价格 × 持仓量背离（自动更新）</title>
 <style>
   :root{--bg:#f7f8fa;--card:#fff;--line:#e3e5e9;--ink:#22262e;--muted:#6b7280;--blue:#185fa5;--orange:#ba7517;--red:#a32d2d;--soft:#e6f1fb}
@@ -58,7 +62,7 @@
   <p class="sub">数据源：SPDR Gold Shares 官方 Historical Archive（日频、交易日口径）。同源同频、滚动 Z-score、无双轴。</p>
 
   <div class="warn">
-    原始数据声明禁止再分发。本页含逐日数据，<strong>请把仓库设为 private</strong>，不要转发 index.html 或把公开 Pages 链接分享出去。GitHub Actions 只负责自动刷新本页数据块，不需要任何个人访问令牌。
+    <strong>数据说明</strong>：价格与持仓来自 SPDR Gold Shares 官方公开披露的 Historical Archive，本页只做衍生指标展示，不收录原始 XLSX；原始文件含使用限制，如权利方有异议请联系仓库所有者移除。GitHub Actions 每工作日自动刷新，不需要任何个人访问令牌。
   </div>
 
   <div class="panel">
@@ -127,7 +131,7 @@
     </details>
   </div>
 
-  <p class="note" id="footer">本页数据由 GitHub Actions 每工作日自动抓取（官方约 UTC 04:10 追加前一交易日数据），没有新数据就不会改动文件；每月自动压缩一次提交历史，仓库超过 200MB 也会自动清理。仅为图表分析，不构成投资建议。</p>
+  <p class="note" id="footer">本页由 GitHub Pages 静态托管，数据已内嵌在 HTML 中，下载后断网也能看。GitHub Actions 每工作日自动抓取（官方约 UTC 04:10 追加前一交易日数据），没有新数据就不会改动文件；每月自动压缩一次提交历史，仓库超过 200MB 也会自动清理。仅为图表分析，不构成投资建议。</p>
 </div>
 
 <script>

@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""自动抓取 SPDR Gold Shares 官方历史数据，更新 index.html 内的数据块与 gld_data.csv。
+"""自动抓取 SPDR Gold Shares 官方历史数据，更新页面数据块、CSV 与给 AI 的文本摘要。
 
 由 GitHub Actions 定时调用，也可本机直接运行：
     python fetch_and_build.py
 
-所有数据来自发行人公开披露文件。该文件声明禁止再分发，请务必把仓库设为 private，
-不要将含数据的 index.html 发布到公开站点。数据仅用于个人分析。
+产出三个同源同日文件：index.html（内嵌数据块，GitHub Pages 直接托管）、
+gld_data.csv、llms.txt。只有数据真的变化才会产生 diff，保证无新数据时零提交。
+
+数据来自发行人公开披露文件，本仓库只做衍生指标展示，不收录原始 XLSX；
+原始文件含使用限制，如权利方有异议请联系仓库所有者移除。仅为图表分析，不构成投资建议。
 """
 import csv
 import datetime
@@ -112,6 +115,92 @@ def write_csv(rows):
     return path
 
 
+PAGES = "https://wj402041069-del.github.io/gold-etf-divergence/"
+REPO_URL = "https://github.com/wj402041069-del/gold-etf-divergence"
+
+
+def weekly(rows):
+    """与 index.html aggregate(rows,'weekly') 一致：周一为 key，同周取最后一个交易日。"""
+    groups = {}
+    for r in rows:
+        key = r[0] - datetime.timedelta(days=r[0].weekday())
+        groups[key] = r
+    return [groups[k] for k in sorted(groups)]
+
+
+def roll_z(vals, n):
+    """与 index.html rollZ 一致：总体标准差（除以 n，不是 n-1）。"""
+    out = [None] * len(vals)
+    for i in range(n - 1, len(vals)):
+        w = vals[i - n + 1:i + 1]
+        m = sum(w) / n
+        sd = (sum((x - m) ** 2 for x in w) / n) ** 0.5
+        out[i] = (vals[i] - m) / sd if sd > 0 else 0.0
+    return out
+
+
+def write_llms(rows):
+    """给 AI / 大模型读的纯文本摘要，与页面同源同日、同口径，自动生成，不要手改。"""
+    wk = weekly(rows)
+    win = 52
+    zp = roll_z([r[1] for r in wk], win)
+    zt = roll_z([r[2] for r in wk], win)
+    D = [None if zp[i] is None or zt[i] is None else zt[i] - zp[i]
+         for i in range(len(wk))]
+    valid = [v for v in D if v is not None]
+    cur = D[-1]
+    pct = (sum(1 for v in valid if v <= cur) / len(valid) * 100) if cur is not None and valid else 0.0
+    last = rows[-1]
+    txt = """# 黄金 ETF 价格 x 持仓量背离（GLD）- 给 AI 的文本摘要
+
+本文件由 fetch_and_build.py 自动生成，与 index.html / gld_data.csv 同源同日、同口径。
+请勿手改；改文案请改 fetch_and_build.py 的 write_llms()。
+
+## 数据快照
+- 数据截止日: {end}
+- 覆盖区间: {start} ~ {end}
+- 有效交易日: {nd}
+- 周频聚合: {nw} 期（滚动窗口 {win} 期）
+- 最新 GLD 收盘: {price:.2f} USD
+- 最新实物持仓: {tonnes:.2f} 吨
+
+## 最新读数（周频 / 全历史口径）
+- 背离强度 D = Z(持仓) - Z(价格) = {d:+.2f}
+- 历史分位 = {pct:.1f}%（历史上约 {rest:.1f}% 的时间比现在更背离）
+- 读法: D > 0 表示持仓相对价格偏强，常见于价格下跌时仍有逆势增持；
+  D > 2 才算历史罕见，当前属于「偏强，值得留意」，不是买卖信号。
+
+## 口径（改动前必读）
+- 价格与实物持仓吨数来自同一份 SPDR Gold Shares 官方 Historical Archive，
+  同一交易日、同一标的，同源同频，不存在跨源时点错配。
+- 用滚动 Z-score（总体标准差，除以 n），不是全程标准化；缩放视图只改可视区间，不改统计口径。
+- 持仓用实物「吨数」，不用 AUM：金价跌 10% 会让 AUM 自动缩水，即使一克都没被赎回。
+- 散点用「持仓变化」而非「持仓水平」，避免共同趋势造成伪相关。
+- 频率切换会改变读数（日 252 / 周 52 / 月 36），跨频率的数值不可直接互比。
+- 交易日口径：只用 Historical Archive 的 Tonnes of Gold 列，不混用按结算日的金条清单。
+
+## 已知限制
+- GLD 是单只基金，不代表全球黄金 ETF 总持仓；与 WGC Goldhub 月度口径覆盖范围不同，不可互推。
+- 相关系数只说明同向程度，不说明因果；D 与「背离」都不是涨跌预测。
+- 2004-2005 年建仓期吨数快速爬升，属结构性变化，不宜与成熟期直接比较。
+- 原始数据版权归发行人所有；本仓库只做衍生分析展示，不收录原始 XLSX。
+
+## 链接
+- 在线看板: {pages}
+- 本摘要: {pages}llms.txt
+- 源码 / 手动刷新: {repo}（Actions -> Refresh GLD divergence data -> Run workflow）
+- 逐日数据: {pages}gld_data.csv
+
+仅为图表分析，不构成投资建议。
+""".format(end=last[0].isoformat(), start=rows[0][0].isoformat(),
+           nd=len(rows), nw=len(wk), win=win, price=last[1], tonnes=last[2],
+           d=cur, pct=pct, rest=100 - pct, pages=PAGES, repo=REPO_URL)
+    path = os.path.join(BASE, "llms.txt")
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(txt)
+    return path
+
+
 def main():
     print("抓取 SPDR 官方历史数据 ...", flush=True)
     rows = parse(download())
@@ -121,9 +210,11 @@ def main():
     updated = rows[-1][0].isoformat()
     size = update_html(data, updated)
     csv_path = write_csv(rows)
+    llms_path = write_llms(rows)
     print("有效交易日 %d，区间 %s ~ %s" % (len(rows), rows[0][0], rows[-1][0]))
     print("最新: 收盘 %.2f USD / 持仓 %.2f 吨" % (rows[-1][1], rows[-1][2]))
-    print("数据截止 %s，index.html %d bytes，CSV %s" % (updated, size, csv_path))
+    print("数据截止 %s，index.html %d bytes" % (updated, size))
+    print("CSV %s / 文本摘要 %s" % (csv_path, llms_path))
 
 
 if __name__ == "__main__":

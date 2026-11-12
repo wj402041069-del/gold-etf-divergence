@@ -1,19 +1,32 @@
 # 黄金 ETF 价格 × 持仓量背离监测系统：20 年同源日频 · 滚动 Z-score · 三图联动 · 小白解读
 
-每工作日由 GitHub Actions 从 **SPDR Gold Shares 官方 Historical Archive** 抓取同一份 XLSX，取出 `Closing Price` 与 `Tonnes of Gold`，重算标准化曲线、背离强度 `D` 与四象限散点，产出可缩放、可悬停、断网也能看的离线看板。全程不依赖本地电脑开机，也不需要 TradingView 或任何行情客户端。
+每工作日由 GitHub Actions 从 **SPDR Gold Shares 官方 Historical Archive** 抓取同一份 XLSX，取出 `Closing Price` 与 `Tonnes of Gold`，重算标准化曲线、背离强度 `D` 与四象限散点，产出可缩放、可悬停、断网也能看的看板。全程不依赖本地电脑开机，也不需要 TradingView 或任何行情客户端。
 
-## 📱 访问地址（本仓库为 Private，未启用 Pages）
+> 每工作日 UTC 06:13（09:13 兜底）自动刷新一次，静态发布，**0 维护、0 服务器、0 数据库、0 密钥**。
+
+## 📱 在线地址（建议收藏 / 添加到主屏幕）
 
 | 线路 | 地址 | 说明 |
 |---|---|---|
-| **主看板（离线）** | 仓库根目录 `index.html` | 下载后双击即可；数据已烤死在 HTML 里，断网也能看 |
+| **主地址（看板）** | [**https://wj402041069-del.github.io/gold-etf-divergence/**](https://wj402041069-del.github.io/gold-etf-divergence/) | GitHub Pages 托管，手机 / 电脑浏览器直接打开；每工作日 UTC 06:13 自动刷新 |
 | **源码 / 手动刷新** | [**https://github.com/wj402041069-del/gold-etf-divergence**](https://github.com/wj402041069-del/gold-etf-divergence) | Actions → Refresh GLD divergence data → Run workflow |
-| **原始数据** | `gld_data.csv` | 三列 `date,price,tonnes`，与页面同源同日 |
-| **自动更新脚本** | `fetch_and_build.py` | 本机也可直接 `python fetch_and_build.py` |
+| **给 AI 的文本摘要（推荐发这个）** | [**https://wj402041069-del.github.io/gold-etf-divergence/llms.txt**](https://wj402041069-del/gold-etf-divergence/llms.txt) | 纯文本，自动跟随数据日更新；问 AI / 丢给大模型时发这个链接，别发网页 |
+| **离线快照** | 仓库根目录 `index.html` | 下载后双击即可看，数据已烤死在 HTML 里，断网也能看 |
+| **逐日数据** | `gld_data.csv` | 三列 `date,price,tonnes`，与页面同源同日 |
 
-> **为什么不像 `a-share-market-breadth` 那样开 GitHub Pages**：SPDR 官方 Historical Archive 的使用声明禁止再分发逐日数据，而 `index.html` 内嵌了全量 5,529 行明细，公开 Pages 等于对外转发这份数据。因此本仓库设为 **Private**、不发布 Pages，仅作个人分析使用。确需在线访问时，请先自行确认授权，再改仓库可见性并开启 Pages —— 由此产生的合规责任由使用者自行承担。
+> 主地址与离线快照是**同一份产物**：Pages 直接挂在 `main` 根目录，流水线把数据块提交回 `main` 后 Pages 自动发布，不需要额外的部署脚本或 `gh-pages` 分支。`llms.txt` 与前两者**同源同日**，由 `fetch_and_build.py` 的 `write_llms()` 每次运行重生成，**严禁手改**；改文案请改 `write_llms()`。
 >
-> 主看板与 CSV 是**同一份产物**：脚本每次运行把数据块原地写回 `index.html`，同时重写 `gld_data.csv`。**严禁手改 `index.html` 中 `__GLD_DATA_START__` / `__GLD_DATA_END__` 之间的内容**，改口径请改 `fetch_and_build.py`（数据侧）或 `index.html` 的计算函数（展示侧）。
+> **数据使用声明**：价格与持仓来自 SPDR 官方公开披露文件。原始 XLSX 含使用限制且未入库，本仓库只发布衍生指标页面与三列 CSV；如权利方对公开转载有异议，请联系仓库所有者移除。公开可见性及由此产生的授权责任由仓库所有者自行承担。
+
+手机 Safari / Chrome / 微信直接打开主地址，然后：
+
+| 系统 | 操作 |
+|---|---|
+| **iPhone（Safari）** | 底部「分享」→ 下滑找到 **「添加到主屏幕」** → 右上角「添加」 |
+| **Android（Chrome）** | 右上角 ⋮ → **「添加到主屏幕 / 安装应用」** |
+| **微信内置浏览器** | 右上角 ⋯ → **「在浏览器中打开」**，再按上面步骤操作 |
+
+建议命名 **「黄金ETF背离」**。页面已带 `apple-mobile-web-app-capable` 与标题 meta；本项目**未配置独立 PWA 图标**，桌面显示浏览器默认图标或网页缩略图（这是诚实现状，不要照抄别的项目写「某某图标」）。
 
 ### 它是怎么工作的
 
@@ -21,18 +34,19 @@
 每工作日 UTC 06:13（09:13 兜底）
     GitHub Actions → fetch_and_build.py（拉 SPDR 官方 XLSX，按表头定位 11 列 → 3 列）
          ↓ 原地替换数据块
-    index.html（内嵌 5529 行）  +  gld_data.csv
-         ↓ 仅当数据真的变化才 commit
-    main 分支更新；每月 1 日 / 超过 200MB 自动压成单 commit
+    index.html（内嵌 5529 行） + gld_data.csv + llms.txt
+         ↓ 仅当数据真的变化才 commit 回 main
+    GitHub Pages 自动发布 → https://wj402041069-del.github.io/gold-etf-divergence/
+         每月 1 日 / 超过 200MB 自动压成单 commit
 ```
 
 > **⚠️ 关于「每次打开是重新跑，还是读缓存」——答案是：读快照，不重新跑。**
-> 1. 打开 `index.html` **不触发任何计算请求、不联网取数**，直接加载内嵌数据；
+> 1. 打开网址**不触发任何计算请求、不联网取数**，直接加载内嵌数据，秒开；
 > 2. 所有 Z-score、D、散点都是打开时在浏览器本地由内嵌数据算出来的，因此断网也能看；
 > 3. 内容只在定时任务抓到新数据后更新一次，白天看到的是最近一个交易日的快照，不是实时行情；
-> 4. 想立刻刷新：仓库 → Actions → **Run workflow**，跑完重新下载 `index.html` 即可。
+> 4. 想立刻刷新：仓库 → Actions → **Run workflow**，跑完约 1 分钟后网址即更新。
 
-仓库为 Private，源码与配置都在 `main`；**不含任何密钥**，CI 提交用 GitHub 自带的 `GITHUB_TOKEN`，不需要个人访问令牌。
+仓库已公开，源码与配置都在 `main`；**不含任何密钥**，CI 提交用 GitHub 自带的 `GITHUB_TOKEN`，不需要个人访问令牌。
 
 ## 目录
 
@@ -132,13 +146,15 @@ SPDR 官网提示：Gold Bar List 按 **settlement date**，网站 Trust 数据�
 
 | 文件 | 生成者 | 能否手改 | 说明 |
 |---|---|---|---|
-| `index.html` | 人工维护模板 + 脚本替换数据块 | ⚠️ 只改数据块**以外**的部分 | 页面、交互、计算逻辑、内嵌数据都在里面 |
-| `fetch_and_build.py` | 人工 | ✅ | 抓 XLSX → 解析 → 替换数据块 → 写 CSV |
+| `index.html` | 人工维护模板 + 脚本替换数据块 | ⚠️ 只改数据块**以外**的部分 | 页面、交互、计算逻辑、内嵌数据都在里面；**Pages 首页** |
+| `fetch_and_build.py` | 人工 | ✅ | 抓 XLSX → 解析 → 替换数据块 → 写 CSV + `llms.txt` |
 | `gld_data.csv` | `fetch_and_build.py` | ❌ | 每次运行全量重写，手动改会被覆盖 |
-| `.github/workflows/update.yml` | 人工 | ✅ | 定时、提交、仓库压缩 |
+| `llms.txt` | `fetch_and_build.py` 的 `write_llms()` | ❌ | 给 AI 读的纯文本摘要，同源同日、同口径 |
+| `.nojekyll` | 人工（空文件） | ✅ | 让 Pages 直接发布静态文件、跳过 Jekyll |
+| `.github/workflows/update.yml` | 人工 | ✅ | 定时、提交、仓库压缩；commit 即触发 Pages 重新发布 |
 | `.gitignore` | 人工 | ✅ | 挡住 XLSX、旧版 HTML、临时脚本、ZIP |
 | `README.md` | 人工 | ✅ | 本文档 |
-| `gld_history.xlsx` | 官方原件 | — | **不入库**（禁止再分发 + 省空间） |
+| `gld_history.xlsx` | 官方原件 | — | **不入库**（原始 XLSX 含使用限制 + 省空间） |
 
 脚本用**表头关键字**定位列（`date` / `closing + price` / `tonnes + gold`），不依赖固定列号；下载失败会重试 3 次（间隔 3/6/9 秒）。
 
@@ -192,7 +208,7 @@ SPDR 官网提示：Gold Bar List 按 **settlement date**，网站 Trust 数据�
 
 ### 6.1 仓库空间治理
 
-- **零空提交**：`window.GLD_UPDATED` 存的是「数据截止日」而不是脚本运行时间。官方没出新数据时，两次运行 `index.html` / `gld_data.csv` 字节完全一致，`git diff --cached --quiet` 成立 → 跳过 commit。这是防止仓库长期膨胀的关键。
+- **零空提交**：`window.GLD_UPDATED` 存的是「数据截止日」而不是脚本运行时间。官方没出新数据时，两次运行 `index.html` / `gld_data.csv` / `llms.txt` 字节完全一致，`git diff --cached --quiet` 成立 → 跳过 commit（Pages 也不会重复构建）。这是防止仓库长期膨胀的关键。
 - **触发式清理**：每次运行用 `gh api repos/... --jq '.size'` 查体积，超过 `204800 KB`（200 MB）即压缩。
 - **定时清理**：每月 1 日无条件压缩。
 - **压缩方式**：`git checkout --orphan` → 单 commit → `git push --force origin main`。`concurrency` 组 `gld-repository` 防并发冲突。
@@ -209,6 +225,20 @@ permissions:
 
 使用平台自动注入的 `GITHUB_TOKEN`，提交身份为 `github-actions[bot]`。**仓库内不需要、也不应存放任何 PAT**。个人访问令牌只在首次建仓 / 本机推送时使用，用完请立即在 GitHub Settings → Developer settings 撤销。
 
+### 6.3 GitHub Pages 部署
+
+| 项 | 值 |
+|---|---|
+| 源 | `main` 分支 / 根目录 `/`（**不是** `docs/`，也**不用** `gh-pages` 分支） |
+| 构建方式 | 分支静态发布（legacy），无 Actions 部署步骤 |
+| 入口 | 根目录 `index.html` |
+| `.nojekyll` | 存在，跳过 Jekyll，保证 `llms.txt` / `gld_data.csv` 原样直出 |
+| 发布 URL | `https://wj402041069-del.github.io/gold-etf-divergence/` |
+
+**为什么直接挂 `main`**：流水线本来就每工作日 commit 回 `main`，Pages 会自动跟着重新发布 —— 少一个 `gh-pages` 分支、少一个强推脚本、少一处可能不同步的地方，最贴合「0 维护」。若改成 `docs/` 或 `gh-pages`，需要额外写部署脚本把 `index.html` 复制过去，属于自找维护负担。
+
+> ⚠️ 公开仓库的 Pages 站点是**公开可读**的，包括 `index.html` 内嵌的逐日数据与 `gld_data.csv`。若之后要收回，去 Settings → Pages 关闭发布即可，页面本体仍可本地打开。
+
 ## 七、本地运行
 
 ```bash
@@ -218,12 +248,12 @@ permissions:
 # 2) 手动刷新数据（需要 Python 3 + openpyxl）
 pip install openpyxl==3.1.5
 python fetch_and_build.py
-#    → 更新 index.html 数据块 + 重写 gld_data.csv
+#    → 更新 index.html 数据块 + 重写 gld_data.csv + 重生成 llms.txt
 
-# 3) 只更新页面、不写 CSV 也可以，但两个文件应保持一致再提交
+# 3) 三个文件必须一起提交，否则页面 / CSV / 文本摘要会不同日
 ```
 
-`fetch_and_build.py` 会打印有效交易日数、区间、最新收盘与吨数、数据截止日和输出字节数，便于核对。
+`fetch_and_build.py` 会打印有效交易日数、区间、最新收盘与吨数、数据截止日、页面字节数和两个产物路径，便于核对。
 
 ## 八、可调旋钮
 
@@ -246,7 +276,9 @@ python fetch_and_build.py
 6. **缩放只改可视区间** —— 任何在 `clampView` / `render` 里重算 Z-score 的改动都是错的。
 7. **负相关时说明文案要跟着变** —— `renderExplain` 里的 `rDetail` 不能写死「价格涨持仓也增」。
 8. **压缩历史用 orphan branch，不要 `--amend` 每次提交** —— 后者会让 Actions 与本地长期分叉。
-9. **改完必须验证**：`node --check` 两段脚本 + 浏览器端渲染 / hover / 缩放 / 拖拽 / 框选，以及 `python fetch_and_build.py` 连续两次运行哈希一致。
+9. **`llms.txt` 不许手改，口径必须与页面一致** —— `write_llms()` 里的 `weekly()`（周一为 key、同周取最后交易日）与 `roll_z()`（总体标准差，除以 `n`）是照抄 `index.html` 的 `aggregate` / `rollZ`；改了一边就必须改另一边，否则给 AI 的摘要会和页面读数打架。
+10. **三个产物必须同批提交** —— `index.html` / `gld_data.csv` / `llms.txt`，漏一个就会出现「页面是新的、摘要是旧的」。
+11. **改完必须验证**：`node --check` 两段脚本 + 浏览器端渲染 / hover / 缩放 / 拖拽 / 框选，以及 `python fetch_and_build.py` 连续两次运行哈希一致。
 
 ## 十、常见问题 FAQ
 
@@ -262,11 +294,14 @@ python fetch_and_build.py
 **Q：TradingView 里能不能直接画？**
 TradingView 没有全球黄金 ETF 实物持仓吨数曲线，也不支持导入外部 CSV。用本仓库的 `gld_data.csv` 自己画是最准的路径。
 
-**Q：为什么仓库是 Private / 没有在线网址？**
-见开头说明：SPDR 数据禁止再分发，`index.html` 内含逐日明细。本地双击打开功能完全一致。
+**Q：在线地址打不开 / 看到的是旧数据？**
+`github.io` 在国内偶尔不可达，可下载仓库根目录 `index.html` 本地打开，内容完全一致（见开头「离线快照」）。Pages 有 CDN 缓存，刷新后等约 1 分钟，或加 `?v=<时间戳>` 强刷；页面标题旁的「数据截至 YYYY-MM-DD」才是真实数据日。
+
+**Q：`llms.txt` 是干什么的？**
+给 AI / 大模型读的纯文本摘要：数据截止日、最新读数、口径、限制、链接一页说完。问 AI 时发这个链接比发网页省事得多；它由脚本自动生成，**不要手改**。
 
 **Q：Actions 跑了但没新 commit？**
-正常 —— 说明官方还没出新的交易日数据，脚本判定字节无变化后跳过提交。
+正常 —— 说明官方还没出新的交易日数据，脚本判定字节无变化后跳过提交（Pages 也不会重复构建）。
 
 ## 十一、已知限制与免责声明
 
@@ -274,7 +309,8 @@ TradingView 没有全球黄金 ETF 实物持仓吨数曲线，也不支持导入
 - Z-score 是相对自身历史的统计描述，不是买卖信号；`D` 大不代表价格即将反转。
 - 相关系数只说明同向程度，不说明因果。
 - 2004–2005 年建仓期持仓吨数快速爬升，属结构性变化，不宜与成熟期直接比较。
-- 原始数据版权归发行人所有，禁止再分发；本仓库仅供个人研究，**不构成投资建议**。
+- 原始数据版权归发行人所有，原始 XLSX 含使用限制且未入库；本仓库只发布衍生指标页面与三列 CSV，**公开可见性及由此产生的授权责任由仓库所有者自行承担**，如权利方有异议请联系移除。
+- 本仓库仅供图表分析，**不构成投资建议**。
 
 ## 十二、给 AI 的维护提示词
 
@@ -311,12 +347,14 @@ TradingView 没有全球黄金 ETF 实物持仓吨数曲线，也不支持导入
 | 2026-11-13 | 新增「这些数字怎么读」小白说明面板（随视图重算） |
 | 2026-11-13 | 修复拖拽平移 `TypeError`、消除无数据空提交、固定 LF 换行 |
 | 2026-11-13 | 定时改为 06:13 + 09:13 UTC，增加每月定时压缩 + 200 MB 触发压缩 |
+| 2026-11-13 | 首推 GitHub（单 commit / Private），Actions 首次运行 success、零空提交实证 |
+| 2026-11-13 | 仓库转公开 + GitHub Pages 上线（main 根目录 / `.nojekyll`）；新增自动生成的 `llms.txt`、移动端 meta、全面改写公开版文案 |
 
 ```text
 验证记录（2026-11-13）
   真实数据 5529 行 / 周频 1148 期 / 2004-11-18 ~ 2026-11-11
   node --check 两段脚本通过；Node VM 端到端 18 项全 PASS
-  连续两次 fetch_and_build.py → index.html 与 gld_data.csv sha256 完全一致
+  连续两次 fetch_and_build.py → index.html / gld_data.csv / llms.txt sha256 完全一致
   浅克隆 + 模拟 gh：单 commit 压缩、文件不丢、后续普通 push 正常
   工作流 YAML 解析通过；仓库内无凭据残留
 ```
