@@ -1,10 +1,12 @@
-# 只把这四个文件放进仓库：index.html / fetch_and_build.py /
-# gld_data.csv / .github/workflows/update.yml
+# 入库的生产文件：index.html / fetch_and_build.py / gld_data.csv / slv_data.csv /
+# llms.txt / README.md / .nojekyll / .github/workflows/update.yml
 # 其余都是本机一次性产物，不入库省空间。
 
 # 原始 xlsx（发行人文件，含逐日数据，禁止再分发）
 gld_history.xlsx
 *.xlsx
+_slv_fund.xls
+*.xls
 
 # 旧版本地工具（已由 index.html 取代）
 gold-etf-divergence.html
@@ -13,6 +15,15 @@ prepare_gld.py
 
 # 临时验证脚本 / 打包产物
 _validate.js
+_verify.js
+_s0.js
+_s1.js
+_s2.js
+_s3.js
+_patch*.py
+_probe*.py
+_calc*.py
+_slv_*.py
 _check*.js
 _c*.js
 *.zip

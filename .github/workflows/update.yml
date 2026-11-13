@@ -1,7 +1,7 @@
-name: Refresh GLD divergence data
+name: Refresh GLD + SLV divergence data
 
-# 官方 Historical Archive 实测约 04:10 UTC 追加前一交易日数据（Last-Modified），
-# CDN 缓存 1 天；因此每工作日抓 1 次即可，不必一天多次。
+# SPDR 官方 Historical Archive 实测约 04:10 UTC 追加前一交易日数据（Last-Modified）；
+# iShares SLV 官方 fund 下载同日更新。CDN 缓存 1 天，因此每工作日抓 1 次即可，不必一天多次。
 # 06:13 UTC 主抓，09:13 UTC 补抓（仅在主抓失败/缓存延迟时起作用，无新数据不会提交）。
 # 每月 1 日 03:37 UTC 定时压缩提交历史；另外每次运行都会检查仓库体积是否超过 200 MB。
 on:
@@ -22,7 +22,7 @@ permissions:
 
 # 禁止两次运行互相覆盖，尤其是可能发生的 force push
 concurrency:
-  group: gld-repository
+  group: gld-slv-repository
   cancel-in-progress: false
 
 jobs:
@@ -44,19 +44,19 @@ jobs:
       - name: Install pinned dependency
         run: pip install openpyxl==3.1.5
 
-      - name: Fetch official data and rebuild index.html
+      - name: Fetch official GLD + SLV data and rebuild index.html
         run: python fetch_and_build.py
 
       - name: Commit only if data changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # 三个文件同源同日；commit 推到 main 后 GitHub Pages 自动重新发布
-          git add index.html gld_data.csv llms.txt
+          # 四个文件同源同日；commit 推到 main 后 GitHub Pages 自动重新发布
+          git add index.html gld_data.csv slv_data.csv llms.txt
           if git diff --cached --quiet; then
             echo "No data change, skip commit."
           else
-            git commit -m "chore: refresh GLD data $(date -u +%Y-%m-%d)"
+            git commit -m "chore: refresh GLD + SLV data $(date -u +%Y-%m-%d)"
             git push
           fi
 
