@@ -55,7 +55,24 @@
   .ex-item h3{font-size:13px;font-weight:600;margin:0 0 3px}
   .ex-item p{font-size:13px;color:#40454e;margin:2px 0}
   .ex-item .num{color:var(--blue);font-weight:600}
-  .ex-note{background:#f5f7fa;border-radius:8px;padding:10px 12px;font-size:12px;color:var(--muted);margin-top:14px}
+   .ex-note{background:#f5f7fa;border-radius:8px;padding:10px 12px;font-size:12px;color:var(--muted);margin-top:14px}
+   .help{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;
+     border:1px solid var(--blue);border-radius:50%;background:#fff;color:var(--blue);
+     font-size:11px;font-weight:600;line-height:1;cursor:help;user-select:none;
+     margin-left:6px;vertical-align:middle;position:relative;outline:none}
+   .help:hover,.help:focus{background:var(--blue);color:#fff}
+   .help-pop{position:absolute;top:15px;left:0;width:336px;max-width:calc(100vw - 48px);
+     display:none;cursor:default;text-align:left;white-space:normal;font-weight:400;
+     background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;
+     box-shadow:0 6px 20px rgba(20,26,36,.11);z-index:30;color:#40454e;font-size:12.5px;line-height:1.7}
+   .help-end .help-pop{left:auto;right:0}
+   .help:hover .help-pop,.help:focus .help-pop,.help:focus-within .help-pop{display:block}
+   .help-pop .hp-h{font-size:13px;font-weight:600;color:var(--ink);margin:0 0 6px}
+   .help-pop .hp-h+.hp-h{margin-top:12px}
+   .help-pop p{margin:5px 0}
+   .help-pop strong,.help-pop b{color:var(--ink);font-weight:600}
+   .help-pop .num{color:var(--blue);font-weight:600}
+   .fold-summary .sub{font-weight:400}
   .s3help{background:#f5f7fa;border-radius:8px;padding:10px 12px;font-size:12.5px;color:#40454e;margin:0 0 10px}
   .s3help p{margin:5px 0}
   .s3help strong{color:var(--ink);font-weight:600}
@@ -97,12 +114,14 @@
   <div class="cards" id="stats"></div>
 
   <div class="panel">
-    <h2>这些数字怎么读 <span class="sub">（下面的解释会自动跟着你切换的视图变，不用记公式）</span></h2>
-    <div id="explain"></div>
-    <div class="ex-note" id="exNote">
+    <details>
+      <summary class="fold-summary">这些数字怎么读 <span class="sub">（每张卡片和参照图 / 图 3 标题旁都有「?」，鼠标悬停或点一下就出现；这里可展开看全部）</span></summary>
+      <div id="explainAll" style="margin-top:12px"></div>
+      <div class="ex-note" id="exNote">
       <strong>Z-score 是什么</strong>：把某个数值减去最近一段时间的平均、再除以标准差。0＝正常水平，+1＝偏高一点，+2＝少见，−2＝少见地低。这样两条不同单位的曲线才能放在同一张图上比。<br>
       <strong>五个容易误会的地方</strong>：① 「最新背离 D」和「历史分位」按全历史算，缩放不变；其余几项随当前视图变。② 持仓用的是<strong>实物吨数</strong>，不是基金规模 AUM —— 金价跌会让规模缩水，吨数不会。③ 「背离」只说明两股力量不同步，不等于马上要涨或跌。④ 图 3 的每个点是<strong>一期相对上一期的变化量</strong>，不是价格水平或持仓总量。⑤ 参照图是<strong>真实价格</strong>，不是 Z-score；纵轴默认按视图自适应，看绝对涨幅请切「从 0 起」。
     </div>
+    </details>
   </div>
 
   <div class="panel">
@@ -114,9 +133,8 @@
   </div>
 
   <div class="panel">
-    <h2 id="priceTitle">参照图｜黄金真实走势（GLD 收盘价，USD / 份，不做 Z-score）
-      <span class="legend"><span class="dot" style="background:#ba7517"></span>真实价格<span class="dot" style="background:#fbe9e9"></span>|D| &gt; 1.5σ 时段</span>
-    </h2>
+    <h2><span id="priceTitle">参照图｜黄金真实走势（GLD 收盘价，USD / 份，不做 Z-score）
+      <span class="legend"><span class="dot" style="background:#ba7517"></span>真实价格<span class="dot" style="background:#fbe9e9"></span>|D| &gt; 1.5σ 时段</span></span><span class="help" tabindex="0" role="button" aria-label="查看参照图说明">?<span class="help-pop" id="helpPrice"></span></span></h2>
     <div class="ranges" id="priceAxisRanges" style="margin:0 0 10px">
       <span class="sub" style="align-self:center;margin-right:2px">纵轴</span>
       <button data-z="0" class="on">自适应（看波动）</button><button data-z="1">从 0 起（看真实幅度）</button>
@@ -141,7 +159,7 @@
   </div>
 
   <div class="panel">
-    <h2 id="scatterTitle">图 3｜四象限散点：每一期「价格变了 % × 持仓变了 吨」 <span class="sub">（随当前视图）</span></h2>
+    <h2><span id="scatterTitle">图 3｜四象限散点：每一期「价格变了 % × 持仓变了 吨」 <span class="sub">（随当前视图）</span></span><span class="help" tabindex="0" role="button" aria-label="查看图 3 说明">?<span class="help-pop" id="helpScatter"></span></span></h2>
     <div class="s3help" id="s3help">
       <p><strong>一句话</strong>：每个点＝某一期比上一期「价格变了百分之几 / 持仓多了或少了多少吨」，<strong>不是那天的金价，也不是那天的持仓总量</strong>。</p>
       <p><strong>四格怎么分</strong>：竖线左边＝价格跌、右边＝涨；横线上边＝持仓增加、下边＝减少。蓝色高亮的<strong>左上角</strong>＝价跌却增持（越跌越买），是这张图的重点；另外三格分别是追涨、跌了赎回、逢高兑现。</p>
@@ -727,21 +745,39 @@ function renderExplain(vs){
       '这是你现在看到的时间范围；'+n+' 是「'+freqName+'」的数量，不是天数。',
       '如果显示的是全部 20 年，最近几个月在图上会被挤得很小 —— 点上方的「近 1 年 / 近 3 年」，或用滚轮放大，就能看清最近。']}
   ];
-  $('explain').innerHTML=items.map(function(o){
+  // 7 段解释分别落到各自的显示框小问号里；折叠区保留全文兜底
+  function block(o){
+    return '<div class="hp-h">'+o.h+'</div>'+o.p.map(function(x){return '<p>'+x+'</p>';}).join('');
+  }
+  function put(id,list){
+    var el=$(id);
+    if(el)el.innerHTML=list.map(function(i){return block(items[i]);}).join('');
+  }
+  put('helpCard1',[0,2]);   // 最新背离 D + 历史分位（同一张卡）
+  put('helpCard2',[3]);     // 价跌期 / 其中增持
+  put('helpCard3',[4]);     // 视图内相关系数 r
+  put('helpCard4',[6]);     // 视图区间
+  put('helpPrice',[1]);     // 参照图真实价格
+  put('helpScatter',[5]);   // 图 3 四象限散点
+  $('explainAll').innerHTML=items.map(function(o){
     return '<div class="ex-item"><h3>'+o.h+'</h3>'+o.p.map(function(x){return '<p>'+x+'</p>';}).join('')+'</div>';
   }).join('');
+}
+function helpHTML(id,end){
+  return '<span class="help'+(end?' help-end':'')+'" tabindex="0" role="button" aria-label="查看这项的说明">?'
+    +'<span class="help-pop" id="'+id+'"></span></span>';
 }
 function renderCards(vs){
   function f(v,d){return v===null||v===undefined?'—':v.toFixed(d===undefined?2:d);}
   var pct=S.res.pctile===null?null:S.res.pctile*100;
   var items=[
-    {k:'最新背离 D（全历史口径）',v:(S.res.cur>=0?'+':'')+f(S.res.cur),n:'历史分位 '+f(pct,1)+'%'},
-    {k:'当前视图：价跌期 / 其中增持',v:vs.down+' / '+vs.buy,n:'占比 '+f(vs.ratio*100,1)+'%'},
-    {k:'视图内相关系数 r',v:f(vs.r),n:'收益 × 持仓变化'},
-    {k:'视图区间',v:S.res.a[S.view.a].label.slice(0,7)+' ~ '+S.res.a[S.view.b].label.slice(0,7),n:'共 '+(S.view.b-S.view.a+1)+' 期'}
+    {k:'最新背离 D（全历史口径）',v:(S.res.cur>=0?'+':'')+f(S.res.cur),n:'历史分位 '+f(pct,1)+'%',help:'helpCard1'},
+    {k:'当前视图：价跌期 / 其中增持',v:vs.down+' / '+vs.buy,n:'占比 '+f(vs.ratio*100,1)+'%',help:'helpCard2'},
+    {k:'视图内相关系数 r',v:f(vs.r),n:'收益 × 持仓变化',help:'helpCard3'},
+    {k:'视图区间',v:S.res.a[S.view.a].label.slice(0,7)+' ~ '+S.res.a[S.view.b].label.slice(0,7),n:'共 '+(S.view.b-S.view.a+1)+' 期',help:'helpCard4',end:true}
   ];
   $('stats').innerHTML=items.map(function(o){
-    return '<div class="card"><div class="k">'+esc(o.k)+'</div><div class="v">'+esc(o.v)+'</div><div class="n">'+esc(o.n)+'</div></div>';
+    return '<div class="card"><div class="k">'+esc(o.k)+helpHTML(o.help,o.end)+'</div><div class="v">'+esc(o.v)+'</div><div class="n">'+esc(o.n)+'</div></div>';
   }).join('');
   renderExplain(vs);
 }
