@@ -15,8 +15,8 @@
 | **源码 / 手动刷新** | [**https://github.com/wj402041069-del/gold-etf-divergence**](https://github.com/wj402041069-del/gold-etf-divergence) | Actions → Refresh GLD + SLV divergence data → Run workflow |
 | **给 AI 的文本摘要（推荐发这个）** | [**https://wj402041069-del.github.io/gold-etf-divergence/llms.txt**](https://wj402041069-del/gold-etf-divergence/llms.txt) | 纯文本，自动跟随数据日更新；问 AI / 丢给大模型时发这个链接，别发网页 |
 | **离线快照** | 仓库根目录 `index.html` | 下载后双击即可看，数据已烤死在 HTML 里，断网也能看 |
-| **黄金逐日数据** | `gld_data.csv` | 三列 `date,price,tonnes`，与页面同源同日 |
-| **白银逐日数据** | `slv_data.csv` | 三列 `date,nav_per_share,shares_million`，**不是吨数、不是收盘价** |
+| **黄金逐日数据** | [**`gld_data.csv`**](https://wj402041069-del.github.io/gold-etf-divergence/gld_data.csv) | 三列 `date,price,tonnes`，与页面同源同日；「手动导入」在**黄金 / 金银对照**模式用这份 |
+| **白银逐日数据** | [**`slv_data.csv`**](https://wj402041069-del.github.io/gold-etf-divergence/slv_data.csv) | 三列 `date,nav_per_share,shares_million`，**不是吨数、不是收盘价**；「手动导入」在**白银**模式用这份 |
 
 > 主地址与离线快照是**同一份产物**：Pages 直接挂在 `main` 根目录，流水线把数据块提交回 `main` 后 Pages 自动发布，不需要额外的部署脚本或 `gh-pages` 分支。`llms.txt` 与前两者**同源同日**，由 `fetch_and_build.py` 的 `write_llms()` 每次运行重生成，**严禁手改**；改文案请改 `write_llms()`。
 >
@@ -244,7 +244,7 @@ S.view      = 三个模式共用，切品种不重置
 | 双击 | 重置到默认视图，所有图同步 |
 | 悬停 | 显示日期、价格、持仓、两条 Z、D；单位随品种变（黄金＝USD/吨，白银＝USD/百万份）；**图 1 / 参照图 / 图 2 / 图 2b 的竖线与圆点像素级对齐到同一期**（四图 `L=52, R=18`）；对照模式的浮层额外给「黄金 D / 白银 D」两行 |
 | 底部导航条 | 框选任意区间，所有图同步；画的是**当前品种**的 D 序列 |
-| 手动导入 CSV | 离线兜底，导入的是**当前品种**的数据（黄金用 `gld_data.csv`，白银用 `slv_data.csv`） |
+| 手动导入 CSV | 离线兜底，导入的是**当前品种**的数据；控件正下方会随品种切换显示该用哪个文件、三列格式与可点击链接。**详见 5.8**，三种模式各不相同 |
 
 ### 5.3 小白说明面板
 
@@ -312,6 +312,30 @@ S.view      = 三个模式共用，切品种不重置
 5. **参照图不是 Z-score，也不等于现货金价 / 银价** —— 它纵轴是真实美元，且默认按视图自适应；看绝对涨幅请切「从 0 起」。
 6. **（新增）白银的「持仓」是份额不是吨** —— 页面所有单位都写「百万份」，别把它当成实物白银吨数，也别和黄金的吨数直接比大小。
 
+### 5.8 离线兜底导入：三个模式该导入哪个文件
+
+顶部「手动导入当前品种 CSV（离线兜底）」导入的是**当前品种**的数据。控件正下方有一块随模式变化的说明，直接给出文件名、三列格式与可点击的在线副本链接，不用猜：
+
+| 当前模式 | 该导入的文件 | 三列格式 | 导入后替换什么 |
+|---|---|---|---|
+| **黄金 GLD** | [**`gld_data.csv`**](https://wj402041069-del.github.io/gold-etf-divergence/gld_data.csv) | `date,price,tonnes` — GLD 收盘价 USD / 实物吨数 | 只替换黄金序列：图 1 / 参照图 / 图 2 / 图 3 / 卡片 / 导航条 |
+| **白银 SLV** | [**`slv_data.csv`**](https://wj402041069-del.github.io/gold-etf-divergence/slv_data.csv) | `date,nav_per_share,shares_million` — NAV/份 / 流通份额百万份 | 只替换白银序列；**不是吨、不是收盘价** |
+| **金银对照** | [**`gld_data.csv`**](https://wj402041069-del.github.io/gold-etf-divergence/gld_data.csv) | 同黄金 | 只替换黄金：上方全套图 + 图 2b 的**金色** D 线 |
+
+> **最容易误解的一点**：金银对照模式同时显示两条 D 线，但**没有「一次导入两个文件」的入口**。在这里导入只换黄金那条；要换图 2b 里的**白银**线，必须先切到「白银 SLV」导入 `slv_data.csv`，再切回「金银对照」。两份数据各自独立，需要分别导入一次。
+
+页面上的链接分两种，在线离线都照顾到：
+
+- **相对路径** `gld_data.csv` / `slv_data.csv`：Pages 在线时是同源下载；把两份 CSV 和 `index.html` 放同一目录、断网双击打开时，链接指向本地同目录文件。
+- **完整在线副本**：[https://wj402041069-del.github.io/gold-etf-divergence/gld_data.csv](https://wj402041069-del.github.io/gold-etf-divergence/gld_data.csv) 与 [https://wj402041069-del.github.io/gold-etf-divergence/slv_data.csv](https://wj402041069-del.github.io/gold-etf-divergence/slv_data.csv)，可直接点开另存，也方便发给别人。控件下方会随当前模式显示对应那一个（对照模式两个都给）。
+
+其余行为：
+
+- CSV 需三列、日期 `YYYY-MM-DD`、两列数值都 `> 0`；表头不含 `date/price/tonnes` 时按第 1/2/3 列依次当作「日期 / 价格 / 持仓」（这正是 `slv_data.csv` 能被直接导入的原因）。
+- 导入只改**当前浏览器内存**里的序列，**不写回仓库、不上传**；另一个品种的数据不受影响。
+- `build()` 会重算全部指标并把视图重置为默认近 3 年；**刷新页面即恢复官方快照**。
+- 官方快照每工作日由 Actions 自动更新，正常在线使用完全不需要手动导入；这个控件只用于断网、本地演示或自造数据校验。
+
 ## 六、GitHub Actions 部署与定时
 
 | cron（UTC） | 含义 | 作用 |
@@ -370,6 +394,8 @@ python fetch_and_build.py
 ```
 
 `fetch_and_build.py` 会分别打印黄金 / 白银的有效交易日数、区间、最新读数、数据截止日、页面字节数和产物路径，便于核对。`SLV 下载失败` 会打印 `WARN` 并沿用 `slv_data.csv`，此时**不要删除该 CSV**。
+
+断网兜底：把两份 CSV 与 `index.html` 放同一目录，双击打开后在顶部点「手动导入当前品种 CSV」选对应文件即可（三个模式该选哪份见 **5.8**）。
 
 ## 八、可调旋钮
 
@@ -444,6 +470,9 @@ TradingView 没有全球黄金 ETF 实物持仓吨数曲线，也不支持导入
 **Q：切品种会把我刚缩放好的时间范围重置吗？**
 不会。三个模式共用同一根黄金 master axis 和同一个 `S.view`，切品种只换数据系列和文案，缩放 / 平移 / 框选结果原样保留。
 
+**Q：「手动导入当前品种 CSV」到底该选哪个文件？金银对照能不能一次导入两个？**
+见 **5.8**，控件下方也会按当前模式直接显示文件名和在线链接。黄金 GLD 用 `gld_data.csv`，白银 SLV 用 `slv_data.csv`；**金银对照的主品种是黄金**，在这里导入只替换黄金那条 D 线，白银要切到「白银 SLV」单独导入一次，再切回对照。没有「一次导入两个文件」的入口，因为两个品种的数据是各自独立的内存序列。
+
 **Q：在线地址打不开 / 看到的是旧数据？**
 `github.io` 在国内偶尔不可达，可下载仓库根目录 `index.html` 本地打开，内容完全一致（见开头「离线快照」）。Pages 有 CDN 缓存，刷新后等约 1 分钟，或加 `?v=<时间戳>` 强刷；页面标题旁的「数据截至 YYYY-MM-DD」才是真实数据日。
 
@@ -508,6 +537,7 @@ TradingView 没有全球黄金 ETF 实物持仓吨数曲线，也不支持导入
 | 2026-11-13 | 上架聚合看板 `https://wj-dashboards.pages.dev/` 成为**第 8 个板块**「黄金ETF背离」（顶部 tab 与 iframe 懒加载，与前 7 个一致）；README 顶部地址表与 `llms.txt` 链接段补看板中心入口 |
 | 2026-11-13 | 接入白银：实测 iShares SLV 官方 fund 下载（SpreadsheetML，5,175 个交易日 / 1,074 周），确认官方表缺逐日吨数与收盘价；按用户拍板采用**官方份额代理**口径（`Shares Outstanding` → 百万份、`NAV per Share` → 价格），同源同交易日、页面全程标注不是吨也不是收盘价 |
 | 2026-11-13 | 按用户拍板实现**同页切换＋对照图**：顶部「黄金 GLD / 白银 SLV / 金银对照」三档，以黄金周序列（1,148 期）为统一 master axis，白银按周键对齐、早期 74 周留 `null`；新增图 2b 金银 D 对照（两条线 + 当前视图 r），四图 hover / 缩放 / 平移 / 双击 / 框选联动；三个模式共用 `S.view`，切品种不重置视图 |
+| 2026-11-13 | 控件区新增「离线兜底导入」随模式变化的说明块：黄金 / 白银 / 金银对照分别写清该导入 `gld_data.csv` 还是 `slv_data.csv`、三列格式、会替换什么，并附相对路径下载链接与完整在线副本；README 新增 5.8、FAQ 一问、`llms.txt` 新增导入段，说明对照模式需分两次导入 |
 
 ```text
 验证记录（2026-11-13，白银版）

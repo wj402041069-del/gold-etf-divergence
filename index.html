@@ -40,8 +40,11 @@
   .tip{position:absolute;display:none;pointer-events:none;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.55;min-width:168px;z-index:5;white-space:nowrap}
   .tip b{font-weight:600}
   .tip .k{color:var(--muted)}
-  .note{font-size:12px;color:var(--muted);margin-top:8px}
-  code{background:#f1f2f4;padding:1px 5px;border-radius:4px;font-size:12px}
+   .note{font-size:12px;color:var(--muted);margin-top:8px}
+   .import-note{background:#f5f7fa;border-radius:8px;padding:9px 12px;font-size:12px;color:#40454e;margin:10px 0 0;line-height:1.75}
+   .import-note a{color:var(--blue);text-decoration:none;border-bottom:1px solid var(--blue);white-space:nowrap}
+   .import-note code{background:#eceff3;font-size:11px}
+   code{background:#f1f2f4;padding:1px 5px;border-radius:4px;font-size:12px}
   details{font-size:13px}
   summary{cursor:pointer;font-weight:600}
   .err{color:var(--red);font-size:13px;margin-top:8px}
@@ -80,6 +83,10 @@
       </div></div>
       <div><label>&nbsp;</label><button id="reset">重置视图</button></div>
       <div><label>手动导入当前品种 CSV（离线兜底）</label><input type="file" id="file" accept=".csv,.txt" style="max-width:190px"></div>
+    </div>
+    <div class="import-note" id="importNote">
+      <strong>离线兜底导入 · 当前品种：黄金 GLD</strong><br>
+      请导入 <a href="gld_data.csv" download>gld_data.csv</a>（三列 <code>date,price,tonnes</code>：GLD 收盘价 USD / 实物吨数）。在线副本：<a href="https://wj402041069-del.github.io/gold-etf-divergence/gld_data.csv" target="_blank" rel="noopener">https://wj402041069-del.github.io/gold-etf-divergence/gld_data.csv</a>。导入只替换黄金序列，不影响白银；导入后视图回到默认近 3 年。
     </div>
     <p class="hint">滚轮缩放（以光标为中心）· 按住左键拖动平移 · 双击重置 · 鼠标悬停显示日期与数值 · 底部导航条可框选区间。所有主图共用同一时间轴：在任意一张图上缩放、平移或悬停，其它图会一起动；<strong>切换品种不会重置视图</strong>。</p>
     <div id="err" class="err"></div>
@@ -913,6 +920,24 @@ function bindNav(){
 // 切换品种只换文案 / 配色 / 当前 res，绝不换 X 轴，也不重置 S.view。
 function applyMode(){
   var silver=S.mode==='silver',cmp=S.mode==='compare',u=U();
+  // 离线兜底导入：三种模式各说清楚该导入哪份 CSV，并给出可直接点的在线副本
+  var PB='https://wj402041069-del.github.io/gold-etf-divergence/';
+  var gL='<a href="gld_data.csv" download>gld_data.csv</a>';
+  var sL='<a href="slv_data.csv" download>slv_data.csv</a>';
+  var gU='<a href="'+PB+'gld_data.csv" target="_blank" rel="noopener">'+PB+'gld_data.csv</a>';
+  var sU='<a href="'+PB+'slv_data.csv" target="_blank" rel="noopener">'+PB+'slv_data.csv</a>';
+  var importTail='导入后视图会回到默认近 3 年；导入的数据只存在当前页面内存里，刷新即恢复官方快照，不会写回仓库。';
+  $('importNote').innerHTML=silver
+    ?'<strong>离线兜底导入 · 当前品种：白银 SLV</strong><br>'
+      +'请导入 '+sL+'（三列 <code>date,nav_per_share,shares_million</code>：<strong>NAV/份</strong> 与 <strong>流通份额（百万份）</strong>，不是实物吨数、也不是市场收盘价）。在线副本：'+sU+'。<br>'
+      +'导入只替换白银序列，不影响黄金；'+importTail
+    :(cmp
+      ?'<strong>离线兜底导入 · 当前主品种：黄金 GLD</strong><br>'
+       +'在「金银对照」模式下导入，替换的是<strong>黄金</strong>：上方全套图与图 2b 的金色 D 线 → 用 '+gL+'（在线 '+gU+'）。<br>'
+       +'要替换图 2b 里的<strong>白银</strong> D 线，请先切到「白银 SLV」导入 '+sL+'（在线 '+sU+'），再切回「金银对照」。<strong>两份数据各自独立，需要分别导入一次</strong>；'+importTail
+      :'<strong>离线兜底导入 · 当前品种：黄金 GLD</strong><br>'
+       +'请导入 '+gL+'（三列 <code>date,price,tonnes</code>：GLD 收盘价 USD / 实物吨数）。在线副本：'+gU+'。<br>'
+       +'导入只替换黄金序列，不影响白银；'+importTail);
   $('pageTitle').textContent=silver?'白银 ETF 价格 × 份额代理背离':(cmp?'黄金 / 白银 · 一并分析':'黄金 ETF 价格 × 持仓量背离');
   $('updated').textContent=cmp
     ?((window.GLD_UPDATED&&window.SLV_UPDATED)?'黄金 '+window.GLD_UPDATED+' / 白银 '+window.SLV_UPDATED:'')

@@ -93,6 +93,17 @@
 - 2004-2005 年建仓期吨数快速爬升，属结构性变化，不宜与成熟期直接比较。
 - 原始数据版权归发行人所有；本仓库只做衍生分析展示，不收录原始 XLSX。
 
+## 离线兜底导入（顶部「手动导入当前品种 CSV」）
+- 这个控件导入的是**当前品种**的数据，三个模式该用的文件不一样，页面会把说明与链接直接显示在控件下方：
+  * 黄金 GLD → `gld_data.csv`（三列 `date,price,tonnes`；GLD 收盘价 USD / 实物吨数）。在线：https://wj402041069-del.github.io/gold-etf-divergence/gld_data.csv
+  * 白银 SLV → `slv_data.csv`（三列 `date,nav_per_share,shares_million`；NAV/份 / 流通份额百万份，**不是吨、不是收盘价**）。在线：https://wj402041069-del.github.io/gold-etf-divergence/slv_data.csv
+  * 金银对照 → 主品种是黄金，在这里导入 `gld_data.csv` 只替换上方全套图与图 2b 的金色 D 线；
+    要换白银那条线，先切到「白银 SLV」导入 `slv_data.csv`，再切回「金银对照」。**两份数据各自独立，需要分别导入一次**。
+- 页面链接同时给相对路径（`gld_data.csv` / `slv_data.csv`，离线双击本地 index.html 时指向同目录文件）
+  与完整在线副本（Pages 同源，可直接下载）。导入只替换对应品种的内存序列，不影响另一个品种。
+- 导入不写回仓库、不上传；`build()` 会重算并把视图重置为默认近 3 年，刷新页面即恢复官方快照。
+- CSV 需三列、日期 `YYYY-MM-DD`、两列数值都 > 0；表头不含 date/price/tonnes 时按第 1/2/3 列依次当作 日期/价格/持仓。
+
 ## 链接
 - 在线看板: https://wj402041069-del.github.io/gold-etf-divergence/
 - 看板中心（聚合入口，本页为第 8 个板块「黄金ETF背离」）: https://wj-dashboards.pages.dev/
